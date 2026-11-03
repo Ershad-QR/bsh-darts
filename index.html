@@ -155,9 +155,10 @@
         .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
         .comparison-card { background: #0f172a; padding: 10px; border-radius: 10px; }
         .input-text-modern {
-            width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155;
-            background: #0f172a; color: white; font-weight: bold; font-size: 1rem; margin: 8px 0;
+            width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #334155;
+            background: #0f172a; color: white; font-weight: bold; font-size: 0.95rem; margin: 4px 0 10px 0;
         }
+        .label-small { font-size: 0.78rem; color: #cbd5e1; font-weight: bold; display: block; text-align: left; }
     </style>
 </head>
 <body>
@@ -173,15 +174,15 @@
 
     <button type="button" class="btn btn-blue" id="btnConnect" onclick="connectGranBoard()">🔌 CONNECTER LA GRAN BOARD</button>
 
-    <!-- Barre Profils & Stats -->
+    <!-- Barre Profils & Sauvegarde GitHub -->
     <div class="profile-bar">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:0.8rem; font-weight:800; color:var(--purple);">☁️ PROFILS & STATISTIQUES</span>
-            <span id="groupCodeDisplay" style="font-size:0.75rem; font-weight:bold; color:#cbd5e1;">Mode Local</span>
+            <span style="font-size:0.8rem; font-weight:800; color:var(--purple);">☁️ BASE DE DONNÉES PROFILS</span>
+            <span id="ghStatusDisplay" style="font-size:0.75rem; font-weight:bold; color:#f59e0b;">⚠️ Non relié à GitHub</span>
         </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
             <button type="button" class="btn btn-orange" onclick="openStatsModal()" style="padding:10px; font-size:0.8rem;">📊 Stats & Comparatifs</button>
-            <button type="button" class="btn btn-purple" onclick="openGroupModal()" style="padding:10px; font-size:0.8rem;">🔗 Code Équipe Cloud</button>
+            <button type="button" class="btn btn-purple" onclick="openGithubModal()" style="padding:10px; font-size:0.8rem;">☁️ Relier à GitHub</button>
         </div>
     </div>
 
@@ -227,17 +228,20 @@
 <!-- MODALE 1 : AJOUTER UN JOUEUR (CHOISIR PROFIL OU CRÉER PROFIL) -->
 <div class="modal-bg" id="addPlayerModal">
     <div class="modal">
-        <h3 style="margin:0 0 8px 0; color:var(--accent); text-align:center;">👤 Qui rejoint la partie ?</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3 style="margin:0; color:var(--accent);">👤 Qui rejoint la partie ?</h3>
+            <button type="button" class="btn btn-dark" style="padding:6px 10px; font-size:0.75rem;" onclick="pullFromGithub()">🔄 Actualiser</button>
+        </div>
         
         <div class="stats-section" style="margin-top:0;">
-            <div class="stats-title">1. Choisir un profil existant :</div>
+            <div class="stats-title">1. Choisir un profil enregistré :</div>
             <div id="existingProfilesList" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;"></div>
         </div>
 
         <div class="stats-section">
             <div class="stats-title">2. Ou créer un nouveau profil :</div>
             <input type="text" id="newProfileInput" class="input-text-modern" placeholder="Entrez votre prénom (ex: Ershad)">
-            <button type="button" class="btn btn-green" onclick="createAndAddProfile()" style="width:100%;">✨ Créer et rejoindre la partie</button>
+            <button type="button" class="btn btn-green" onclick="createAndAddProfile()" style="width:100%;">✨ Créer et sauvegarder</button>
         </div>
 
         <button type="button" class="btn btn-dark" onclick="closeAddPlayerModal()" style="width:100%; margin-top:12px;">Fermer</button>
@@ -271,15 +275,29 @@
     </div>
 </div>
 
-<!-- MODALE 3 : CODE ÉQUIPE CLOUD -->
-<div class="modal-bg" id="groupModal">
+<!-- MODALE 3 : CONNEXION AU DÉPÔT GITHUB POUR SAUVEGARDER PROFILES.JSON -->
+<div class="modal-bg" id="githubModal">
     <div class="modal">
-        <h3 style="margin:0 0 10px 0; color:var(--purple); text-align:center;">🔗 Synchronisation entre téléphones</h3>
-        <p style="font-size:0.82rem; color:#cbd5e1; text-align:center; margin:0 0 10px 0;">Entrez un code d'équipe commun pour retrouver vos profils sur un autre téléphone :</p>
-        <input type="text" id="groupCodeInput" class="input-text-modern" placeholder="Ex: flechettes-2026">
-        <div style="display:flex; gap:8px; margin-top:8px;">
-            <button type="button" class="btn btn-green" onclick="saveGroupChoice()" style="flex:1;">Synchroniser</button>
-            <button type="button" class="btn btn-dark" onclick="closeGroupModal()">Annuler</button>
+        <h3 style="margin:0 0 8px 0; color:var(--purple); text-align:center;">☁️ Sauvegarde Directe dans GitHub</h3>
+        <p style="font-size:0.78rem; color:#cbd5e1; margin:0 0 12px 0;">Reliez votre dépôt GitHub pour que l'application crée et mette à jour un fichier <code>profiles.json</code> commun à votre PC et tous vos téléphones :</p>
+        
+        <label class="label-small">1. Votre pseudo GitHub (Owner) :</label>
+        <input type="text" id="ghOwnerInput" class="input-text-modern" placeholder="Ex: ershad-bsh">
+
+        <label class="label-small">2. Nom de votre dépôt GitHub (Repository) :</label>
+        <input type="text" id="ghRepoInput" class="input-text-modern" placeholder="Ex: bsh-darts">
+
+        <label class="label-small">3. Votre clé Token GitHub (Fine-grained token) :</label>
+        <input type="password" id="ghTokenInput" class="input-text-modern" placeholder="github_pat_...">
+
+        <div style="display:flex; gap:8px; margin-top:6px;">
+            <button type="button" class="btn btn-green" onclick="saveGithubConfig()" style="flex:1;">💾 Connecter & Fusionner</button>
+            <button type="button" class="btn btn-dark" onclick="closeGithubModal()">Fermer</button>
+        </div>
+
+        <div class="stats-section" style="margin-top:12px;">
+            <div class="stats-title" style="font-size:0.78rem;">📲 Configurer un autre téléphone en 1 clic :</div>
+            <button type="button" class="btn btn-blue" onclick="copyMagicLink()" style="width:100%; padding:10px; font-size:0.8rem;">🔗 Copier le Lien Magique (PC ➔ Téléphone)</button>
         </div>
     </div>
 </div>
@@ -309,9 +327,6 @@
     const GRAN_SERVICE = '442f1570-8a00-9a28-cbe1-e1d4212d53eb';
     const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
     const CRICKET_NUMS = Array.of(20, 19, 18, 17, 16, 15, 25);
-
-    // Nettoyage automatique des anciennes tables erronées en cache
-    localStorage.removeItem('granboard_map_v1');
 
     // --- TABLE EXACTE ET VÉRIFIÉE DES 83 CAPTEURS DE VOTRE GRAN BOARD 3S ---
     const segmentMap = {
@@ -406,8 +421,34 @@
     let boardLocked = false;
     let manualLock = false;
     let mode = '501';
-    
-    let groupCode = localStorage.getItem('granboard_group_code') || '';
+
+    // Configuration GitHub Storage
+    let ghConfig = { owner: '', repo: '', token: '' };
+    try {
+        const savedGh = JSON.parse(localStorage.getItem('granboard_gh_config'));
+        if (savedGh) ghConfig = savedGh;
+    } catch(e) {}
+
+    // Détection automatique si on est sur une URL github.io (pré-remplit le pseudo et le dépôt !)
+    if (!ghConfig.owner && window.location.hostname.endsWith('.github.io')) {
+        ghConfig.owner = window.location.hostname.replace('.github.io', '');
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        if (pathParts.length > 0) ghConfig.repo = pathParts.at(0);
+    }
+
+    // Détection d'un Lien Magique (?gh=owner|repo|token)
+    try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('gh')) {
+            const raw = atob(params.get('gh')).split('|');
+            if (raw.length === 3) {
+                ghConfig = { owner: raw.at(0), repo: raw.at(1), token: raw.at(2) };
+                localStorage.setItem('granboard_gh_config', JSON.stringify(ghConfig));
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+    } catch(e) {}
+
     let globalProfiles = {};
     try { globalProfiles = JSON.parse(localStorage.getItem('granboard_profiles')) || {}; } catch(e) {}
 
@@ -418,7 +459,6 @@
     let currentPlayer = 0;
     let historyStack = Array.of();
     let modalMode = 'add';
-    let pendingRawCode = null;
     let selectedNum = 20;
 
     function log(msg) {
@@ -527,11 +567,150 @@
         document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Son' : '🔇 Muet';
     }
 
+    // --- SYNCHRONISATION DIRECTE AVEC VOTRE DÉPÔT GITHUB (profiles.json) ---
+    function updateGhBadge() {
+        const el = document.getElementById('ghStatusDisplay');
+        if (ghConfig.owner && ghConfig.repo && ghConfig.token) {
+            el.textContent = '✅ GitHub : ' + ghConfig.owner + '/' + ghConfig.repo;
+            el.style.color = '#10b981';
+        } else {
+            el.textContent = '⚠️ Non relié à GitHub';
+            el.style.color = '#f59e0b';
+        }
+    }
+
+    function openGithubModal() {
+        document.getElementById('ghOwnerInput').value = ghConfig.owner || '';
+        document.getElementById('ghRepoInput').value = ghConfig.repo || '';
+        document.getElementById('ghTokenInput').value = ghConfig.token || '';
+        document.getElementById('githubModal').style.display = 'flex';
+    }
+    function closeGithubModal() {
+        document.getElementById('githubModal').style.display = 'none';
+    }
+
+    async function saveGithubConfig() {
+        ghConfig.owner = document.getElementById('ghOwnerInput').value.trim();
+        ghConfig.repo  = document.getElementById('ghRepoInput').value.trim();
+        ghConfig.token = document.getElementById('ghTokenInput').value.trim();
+        if (!ghConfig.owner || !ghConfig.repo || !ghConfig.token) {
+            alert("Veuillez remplir les 3 champs (Pseudo, Dépôt et Token) !");
+            return;
+        }
+        localStorage.setItem('granboard_gh_config', JSON.stringify(ghConfig));
+        updateGhBadge();
+        closeGithubModal();
+        await pushToGithub();
+    }
+
+    function copyMagicLink() {
+        const owner = document.getElementById('ghOwnerInput').value.trim();
+        const repo  = document.getElementById('ghRepoInput').value.trim();
+        const token = document.getElementById('ghTokenInput').value.trim();
+        if (!owner || !repo || !token) {
+            alert("Remplissez d'abord les 3 champs ci-dessus !");
+            return;
+        }
+        const encoded = btoa(owner + '|' + repo + '|' + token);
+        const baseUrl = window.location.origin + window.location.pathname;
+        const magicUrl = baseUrl + '?gh=' + encodeURIComponent(encoded);
+        navigator.clipboard?.writeText(magicUrl);
+        prompt("Copiez ce Lien Magique et ouvrez-le sur votre téléphone ou PC pour relier automatiquement les profils :", magicUrl);
+    }
+
+    // Fusion intelligente par nom de joueur (évite les doublons entre PC et Téléphone)
+    function mergeProfiles(remoteProfiles) {
+        if (!remoteProfiles || typeof remoteProfiles !== 'object') return;
+        Object.keys(remoteProfiles).forEach(function(rId) {
+            const rProf = remoteProfiles[rId];
+            if (!rProf || !rProf.name) return;
+            // Cherche si un profil avec le même prénom existe déjà localement
+            const existingId = Object.keys(globalProfiles).find(function(lId) {
+                return globalProfiles[lId].name.toUpperCase() === rProf.name.toUpperCase();
+            });
+            if (!existingId) {
+                globalProfiles[rId] = rProf;
+            } else {
+                const lProf = globalProfiles[existingId];
+                if ((rProf.gamesPlayed || 0) >= (lProf.gamesPlayed || 0)) {
+                    globalProfiles[existingId] = rProf;
+                }
+            }
+        });
+        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+    }
+
+    async function pullFromGithub() {
+        if (!ghConfig.owner || !ghConfig.repo) return null;
+        const apiUrl = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json?t=' + Date.now();
+        const headers = { 'Accept': 'application/vnd.github+json' };
+        if (ghConfig.token) headers['Authorization'] = 'Bearer ' + ghConfig.token;
+
+        try {
+            const res = await fetch(apiUrl, { headers: headers, cache: 'no-store' });
+            if (res.status === 200) {
+                const data = await res.json();
+                const jsonStr = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+                const remoteProfiles = JSON.parse(jsonStr);
+                mergeProfiles(remoteProfiles);
+                renderUI();
+                renderExistingProfilesList();
+                log("☁️ Profils synchronisés depuis GitHub !");
+                return data.sha;
+            }
+        } catch (err) {
+            log("⚠️ Lecture GitHub : " + err.message);
+        }
+        return null;
+    }
+
+    async function pushToGithub() {
+        if (!ghConfig.owner || !ghConfig.repo || !ghConfig.token) {
+            log("ℹ️ Profil sauvegardé sur cet appareil (reliez GitHub pour synchroniser).");
+            return;
+        }
+        try {
+            log("☁️ Sauvegarde dans GitHub (profiles.json)...");
+            // 1. On récupère d'abord la version sur GitHub pour fusionner sans écraser
+            const currentSha = await pullFromGithub();
+
+            // 2. On envoie le fichier profiles.json mis à jour dans le dépôt GitHub
+            const apiUrl = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json';
+            const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(globalProfiles, null, 2))));
+            const bodyObj = {
+                message: "Synchronisation profils GranBoard",
+                content: contentBase64
+            };
+            if (currentSha) bodyObj.sha = currentSha;
+
+            const res = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': 'Bearer ' + ghConfig.token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bodyObj)
+            });
+
+            if (res.ok) {
+                log("✅ Fichier profiles.json enregistré dans votre GitHub !");
+                renderUI();
+            } else {
+                const errData = await res.json();
+                log("⚠️ Refus GitHub : " + (errData.message || res.status));
+            }
+        } catch (err) {
+            log("⚠️ Erreur d'écriture GitHub : " + err.message);
+        }
+    }
+
     // --- GESTION DES PROFILS ET AJOUT DE JOUEUR ---
-    function openAddPlayerModal() {
-        renderExistingProfilesList();
+    async function openAddPlayerModal() {
         document.getElementById('newProfileInput').value = '';
         document.getElementById('addPlayerModal').style.display = 'flex';
+        renderExistingProfilesList();
+        await pullFromGithub();
     }
     function closeAddPlayerModal() {
         document.getElementById('addPlayerModal').style.display = 'none';
@@ -552,7 +731,7 @@
             row.style.gap = '6px';
             row.innerHTML = '<button type="button" class="btn btn-blue" style="flex:1; justify-content:space-between; padding:10px;" onclick="selectExistingProfile(\'' + id + '\')">' +
                 '<span>👤 ' + prof.name + '</span>' +
-                '<span style="font-size:0.75rem; opacity:0.85;">🏆 ' + prof.wins + ' vict.</span>' +
+                '<span style="font-size:0.75rem; opacity:0.85;">🏆 ' + (prof.wins || 0) + ' vict.</span>' +
                 '</button>';
             container.appendChild(row);
         });
@@ -587,7 +766,7 @@
         log('👤 Nouveau profil créé : ' + name);
         addActivePlayer(name, id);
         closeAddPlayerModal();
-        await syncCloud('upload');
+        await pushToGithub();
     }
 
     function addActivePlayer(name, profileId) {
@@ -614,55 +793,10 @@
         renderUI();
     }
 
-    // --- SYNCHRONISATION CLOUD ENTRE TÉLÉPHONES ---
-    async function syncCloud(direction) {
-        if (!groupCode) return;
-        const url = 'https://kvdb.io/A6T9k2mN8pQr4sW1vX3yZa/' + encodeURIComponent(groupCode);
-        try {
-            if (direction === 'upload') {
-                await fetch(url, {
-                    method: 'POST',
-                    body: JSON.stringify(globalProfiles)
-                });
-            } else if (direction === 'download') {
-                const res = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && typeof data === 'object') {
-                        globalProfiles = Object.assign({}, globalProfiles, data);
-                        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-                        log('☁️ Profils synchronisés !');
-                    }
-                }
-            }
-        } catch (e) {
-            log('Info : Profils sauvegardés sur ce téléphone.');
-        }
-    }
-
-    function openGroupModal() {
-        document.getElementById('groupCodeInput').value = groupCode;
-        document.getElementById('groupModal').style.display = 'flex';
-    }
-    function closeGroupModal() {
-        document.getElementById('groupModal').style.display = 'none';
-    }
-    async function saveGroupChoice() {
-        const code = document.getElementById('groupCodeInput').value.trim().toLowerCase();
-        if (code !== "") {
-            groupCode = code;
-            localStorage.setItem('granboard_group_code', groupCode);
-            document.getElementById('groupCodeDisplay').textContent = 'Équipe : ' + groupCode;
-            closeGroupModal();
-            await syncCloud('download');
-            renderUI();
-        }
-    }
-
     // --- CONNEXION BLUETOOTH GRAN BOARD 3S ---
     async function connectGranBoard() {
         if (!navigator.bluetooth) {
-            alert("Bluetooth non détecté : utilisez Google Chrome sur Android (en mode Debug sur CodePen) !");
+            alert("Bluetooth non détecté : utilisez Google Chrome sur Android !");
             return;
         }
         try {
@@ -716,8 +850,7 @@
             const hit = activeMap[code];
             registerHit(hit.label, hit.sector, hit.mult);
         } else {
-            // Si le bouton physique de votre cible envoie un code particulier non encore mappé, il passe au joueur suivant
-            log('⏭️ Code spécial détecté (' + code + ') -> Passage au joueur suivant');
+            log('⏭️ Bouton cible (' + code + ') -> Joueur suivant');
             nextTurn();
         }
     }
@@ -835,7 +968,7 @@
             }
         });
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-        await syncCloud('upload');
+        await pushToGithub();
     }
 
     function undoLast() {
@@ -875,7 +1008,8 @@
     }
 
     // --- STATISTIQUES & COMPARATIFS (+ OUVERTURE NOUVEL ONGLET) ---
-    function openStatsModal() {
+    async function openStatsModal() {
+        await pullFromGithub();
         document.getElementById('statsModal').style.display = 'flex';
         const leaderboard = document.getElementById('leaderboardContent');
         const ids = Object.keys(globalProfiles);
@@ -1066,12 +1200,10 @@
         return '⊗';
     }
 
-    if (groupCode) {
-        document.getElementById('groupCodeDisplay').textContent = 'Équipe : ' + groupCode;
-        syncCloud('download').then(function() { renderUI(); });
-    }
+    updateGhBadge();
     initGame();
-    log("✅ 83 zones Gran Board 3s chargées et prêtes !");
+    pullFromGithub();
+    log("✅ 83 zones Gran Board 3s chargées !");
 </script>
 </body>
 </html>
