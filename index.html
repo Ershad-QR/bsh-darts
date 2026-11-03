@@ -24,10 +24,10 @@
             padding: 10px;
             user-select: none;
             padding-bottom: 40px;
+            transition: background-color 0.15s ease;
         }
         .app { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
         
-        /* En-tête */
         .top-bar {
             display: flex; justify-content: space-between; align-items: center;
             background: var(--card); padding: 12px 16px; border-radius: 16px;
@@ -38,7 +38,6 @@
         }
         .badge.ok { background: rgba(16,185,129,0.2); color: var(--primary); border-color: var(--primary); }
         
-        /* Boutons */
         .btn {
             border: none; border-radius: 14px; padding: 14px; font-weight: 800;
             font-size: 0.95rem; color: white; cursor: pointer; display: flex;
@@ -52,20 +51,41 @@
         .btn-purple { background: var(--purple); }
         .btn-dark { background: #334155; }
         
-        /* Structure des écrans */
         .screen { display: none; flex-direction: column; gap: 12px; }
         .screen.active { display: flex; }
 
         .card { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.05); }
         
-        /* Sélection des joueurs pour la partie */
+        .options-grid-check {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .option-check-card {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #334155;
+        }
+        .option-check-card.checked {
+            border-color: var(--blue);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--blue);
+        }
+
         .player-selector-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; margin-bottom: 6px;
         }
-        .checkbox-custom { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--blue); }
+        .checkbox-custom { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--blue); cursor: pointer; }
 
-        /* Écran de Jeu */
         .shield-banner {
             background: rgba(245, 158, 11, 0.15); border: 2px solid var(--accent);
             color: var(--accent); padding: 12px; border-radius: 14px; text-align: center;
@@ -86,6 +106,12 @@
         .p-card.active .p-score { color: var(--accent); }
         .p-darts { display: flex; gap: 6px; font-size: 0.85rem; margin-top: 4px; }
         .dart-pill { background: #0f172a; padding: 2px 8px; border-radius: 6px; color: var(--accent); font-weight: bold; }
+        
+        .btn-action-player {
+            background: rgba(239,68,68,0.15); border: 1px solid var(--danger);
+            color: var(--danger); border-radius: 10px; font-size: 1rem;
+            cursor: pointer; padding: 8px 12px; font-weight: bold;
+        }
         
         .cricket-board { background: var(--card); border-radius: 14px; padding: 10px; display: none; }
         .c-grid-header {
@@ -154,7 +180,7 @@
         <button type="button" class="btn btn-dark" onclick="openGithubModal()">☁️ RELIER À GITHUB (SYNCHRO)</button>
     </div>
 
-    <!-- ================= ÉCRAN 2 : ARÈNE DE JEU ACTIVE ================= -->
+    <!-- ================= ÉCRAN 2 : ARÈNE DE JEU ARÈNE ACTIVE ================= -->
     <div id="screenGame" class="screen">
         <div class="shield-banner" id="shieldBanner">
             🛡️ CIBLE VERROUILLÉE (Retirez vos flèches sans risque !)<br>
@@ -186,31 +212,35 @@
     <div class="log-box" id="logs">Initialisation...</div>
 </div>
 
-<!-- MODALE : CONFIGURATION DE LA PARTIE (Double in/out, choix joueurs) -->
+<!-- MODALE : CONFIGURATION DE LA PARTIE (Options cumulables & choix joueurs) -->
 <div class="modal-bg" id="startGameModal">
     <div class="modal">
         <h3 style="margin:0 0 12px 0; color:var(--primary); text-align:center;">🎯 Lancer une partie</h3>
         
         <div class="stats-section" style="margin-top:0;">
-            <div class="stats-title">1. Mode de jeu & Options</div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-bottom:8px;">
-                <select id="gameMode" onchange="toggleDoubleOptions()">
-                    <option value="501">Jeu : 501</option>
-                    <option value="301">Jeu : 301</option>
-                    <option value="cricket">Jeu : Cricket</option>
-                    <option value="clock">Tour du Monde</option>
-                </select>
-                <select id="doubleOption">
-                    <option value="standard">Standard</option>
-                    <option value="double-out">Double Out</option>
-                    <option value="double-in">Double In</option>
-                    <option value="double-in-out">Double In & Out</option>
-                </select>
+            <div class="stats-title">1. Mode de jeu</div>
+            <select id="gameMode" onchange="toggleOptionBox()" style="width:100%;">
+                <option value="501">Jeu : 501</option>
+                <option value="301">Jeu : 301</option>
+                <option value="cricket">Jeu : Cricket</option>
+                <option value="clock">Tour du Monde</option>
+            </select>
+
+            <!-- Cases cochables pour activer les options cumulées -->
+            <div class="options-grid-check" id="doubleOptionsBox">
+                <div class="option-check-card" id="optDoubleIn" onclick="toggleOptionCheck('optDoubleIn')">
+                    <span>Double In (Début)</span>
+                    <input type="checkbox" id="chkDoubleIn" style="pointer-events:none;">
+                </div>
+                <div class="option-check-card" id="optDoubleOut" onclick="toggleOptionCheck('optDoubleOut')">
+                    <span>Double Out (Fin)</span>
+                    <input type="checkbox" id="chkDoubleOut" style="pointer-events:none;">
+                </div>
             </div>
         </div>
 
         <div class="stats-section">
-            <div class="stats-title">2. Cocher les joueurs qui jouent :</div>
+            <div class="stats-title">2. Cocher les participants :</div>
             <div id="selectPlayersList" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
         </div>
 
@@ -291,93 +321,31 @@
 <script>
     const GRAN_SERVICE = '442f1570-8a00-9a28-cbe1-e1d4212d53eb';
     const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
+    const GRAN_WRITE   = '442f1572-8a00-9a28-cbe1-e1d4212d53eb'; 
     const CRICKET_NUMS = Array.of(20, 19, 18, 17, 16, 15, 25);
 
-    // --- TABLE EXACTE ET VÉRIFIÉE DES 83 CAPTEURS DE VOTRE GRAN BOARD 3S ---
     const segmentMap = {
-        "2.3@": {"label":"S1","sector":1,"mult":1},
-        "2.4@": {"label":"T1","sector":1,"mult":3},
-        "2.5@": {"label":"S1","sector":1,"mult":1},
-        "2.6@": {"label":"D1","sector":1,"mult":2},
-        "9.1@": {"label":"S2","sector":2,"mult":1},
-        "9.0@": {"label":"T2","sector":2,"mult":3},
-        "9.2@": {"label":"S2","sector":2,"mult":1},
-        "8.2@": {"label":"D2","sector":2,"mult":2},
-        "7.1@": {"label":"S3","sector":3,"mult":1},
-        "7.0@": {"label":"T3","sector":3,"mult":3},
-        "7.2@": {"label":"S3","sector":3,"mult":1},
-        "8.4@": {"label":"D3","sector":3,"mult":2},
-        "0.1@": {"label":"S4","sector":4,"mult":1},
-        "0.3@": {"label":"T4","sector":4,"mult":3},
-        "0.5@": {"label":"S4","sector":4,"mult":1},
-        "0.6@": {"label":"D4","sector":4,"mult":2},
-        "5.1@": {"label":"S5","sector":5,"mult":1},
-        "5.2@": {"label":"T5","sector":5,"mult":3},
-        "5.4@": {"label":"S5","sector":5,"mult":1},
-        "4.6@": {"label":"D5","sector":5,"mult":2},
-        "1.0@": {"label":"S6","sector":6,"mult":1},
-        "1.1@": {"label":"T6","sector":6,"mult":3},
-        "1.3@": {"label":"S6","sector":6,"mult":1},
-        "4.4@": {"label":"D6","sector":6,"mult":2},
-        "11.1@": {"label":"S7","sector":7,"mult":1},
-        "11.2@": {"label":"T7","sector":7,"mult":3},
-        "11.4@": {"label":"S7","sector":7,"mult":1},
-        "8.6@": {"label":"D7","sector":7,"mult":2},
-        "6.2@": {"label":"S8","sector":8,"mult":1},
-        "6.4@": {"label":"T8","sector":8,"mult":3},
-        "6.5@": {"label":"S8","sector":8,"mult":1},
-        "6.6@": {"label":"D8","sector":8,"mult":2},
-        "9.3@": {"label":"S9","sector":9,"mult":1},
-        "9.4@": {"label":"T9","sector":9,"mult":3},
-        "9.5@": {"label":"S9","sector":9,"mult":1},
-        "9.6@": {"label":"D9","sector":9,"mult":2},
-        "2.0@": {"label":"S10","sector":10,"mult":1},
-        "2.1@": {"label":"T10","sector":10,"mult":3},
-        "2.2@": {"label":"S10","sector":10,"mult":1},
-        "4.3@": {"label":"D10","sector":10,"mult":2},
-        "7.3@": {"label":"S11","sector":11,"mult":1},
-        "7.4@": {"label":"T11","sector":11,"mult":3},
-        "7.5@": {"label":"S11","sector":11,"mult":1},
-        "7.6@": {"label":"D11","sector":11,"mult":2},
-        "5.0@": {"label":"S12","sector":12,"mult":1},
-        "5.3@": {"label":"T12","sector":12,"mult":3},
-        "5.5@": {"label":"S12","sector":12,"mult":1},
-        "5.6@": {"label":"D12","sector":12,"mult":2},
-        "0.0@": {"label":"S13","sector":13,"mult":1},
-        "0.2@": {"label":"T13","sector":13,"mult":3},
-        "0.4@": {"label":"S13","sector":13,"mult":1},
-        "4.5@": {"label":"D13","sector":13,"mult":2},
-        "10.3@": {"label":"S14","sector":14,"mult":1},
-        "10.4@": {"label":"T14","sector":14,"mult":3},
-        "10.5@": {"label":"S14","sector":14,"mult":1},
-        "10.6@": {"label":"D14","sector":14,"mult":2},
-        "3.0@": {"label":"S15","sector":15,"mult":1},
-        "3.1@": {"label":"T15","sector":15,"mult":3},
-        "3.2@": {"label":"S15","sector":15,"mult":1},
-        "4.2@": {"label":"D15","sector":15,"mult":2},
-        "11.0@": {"label":"S16","sector":16,"mult":1},
-        "11.3@": {"label":"T16","sector":16,"mult":3},
-        "11.5@": {"label":"S16","sector":16,"mult":1},
-        "11.6@": {"label":"D16","sector":16,"mult":2},
-        "10.1@": {"label":"S17","sector":17,"mult":1},
-        "10.0@": {"label":"T17","sector":17,"mult":3},
-        "10.2@": {"label":"S17","sector":17,"mult":1},
-        "8.3@": {"label":"D17","sector":17,"mult":2},
-        "1.2@": {"label":"S18","sector":18,"mult":1},
-        "1.4@": {"label":"T18","sector":18,"mult":3},
-        "1.5@": {"label":"S18","sector":18,"mult":1},
-        "1.6@": {"label":"D18","sector":18,"mult":2},
-        "6.1@": {"label":"S19","sector":19,"mult":1},
-        "6.0@": {"label":"T19","sector":19,"mult":3},
-        "6.3@": {"label":"S19","sector":19,"mult":1},
-        "8.5@": {"label":"D19","sector":19,"mult":2},
-        "3.3@": {"label":"S20","sector":20,"mult":1},
-        "3.4@": {"label":"T20","sector":20,"mult":3},
-        "3.5@": {"label":"S20","sector":20,"mult":1},
-        "3.6@": {"label":"D20","sector":20,"mult":2},
-        "8.0@": {"label":"BULL","sector":25,"mult":1},
-        "4.0@": {"label":"D-BULL","sector":25,"mult":2},
-        "BTN@": {"label":"BOUTON","sector":-1,"mult":1}
+        "2.3@": {"label":"S1","sector":1,"mult":1}, "2.4@": {"label":"T1","sector":1,"mult":3}, "2.5@": {"label":"S1","sector":1,"mult":1}, "2.6@": {"label":"D1","sector":1,"mult":2},
+        "9.1@": {"label":"S2","sector":2,"mult":1}, "9.0@": {"label":"T2","sector":2,"mult":3}, "9.2@": {"label":"S2","sector":2,"mult":1}, "8.2@": {"label":"D2","sector":2,"mult":2},
+        "7.1@": {"label":"S3","sector":3,"mult":1}, "7.0@": {"label":"T3","sector":3,"mult":3}, "7.2@": {"label":"S3","sector":3,"mult":1}, "8.4@": {"label":"D3","sector":3,"mult":2},
+        "0.1@": {"label":"S4","sector":4,"mult":1}, "0.3@": {"label":"T4","sector":4,"mult":3}, "0.5@": {"label":"S4","sector":4,"mult":1}, "0.6@": {"label":"D4","sector":4,"mult":2},
+        "5.1@": {"label":"S5","sector":5,"mult":1}, "5.2@": {"label":"T5","sector":5,"mult":3}, "5.4@": {"label":"S5","sector":5,"mult":1}, "4.6@": {"label":"D5","sector":5,"mult":2},
+        "1.0@": {"label":"S6","sector":6,"mult":1}, "1.1@": {"label":"T6","sector":6,"mult":3}, "1.3@": {"label":"S6","sector":6,"mult":1}, "4.4@": {"label":"D6","sector":6,"mult":2},
+        "11.1@": {"label":"S7","sector":7,"mult":1}, "11.2@": {"label":"T7","sector":7,"mult":3}, "11.4@": {"label":"S7","sector":7,"mult":1}, "8.6@": {"label":"D7","sector":7,"mult":2},
+        "6.2@": {"label":"S8","sector":8,"mult":1}, "6.4@": {"label":"T8","sector":8,"mult":3}, "6.5@": {"label":"S8","sector":8,"mult":1}, "6.6@": {"label":"D8","sector":8,"mult":2},
+        "9.3@": {"label":"S9","sector":9,"mult":1}, "9.4@": {"label":"T9","sector":9,"mult":3}, "9.5@": {"label":"S9","sector":9,"mult":1}, "9.6@": {"label":"D9","sector":9,"mult":2},
+        "2.0@": {"label":"S10","sector":10,"mult":1}, "2.1@": {"label":"T10","sector":10,"mult":3}, "2.2@": {"label":"S10","sector":10,"mult":1}, "4.3@": {"label":"D10","sector":10,"mult":2},
+        "7.3@": {"label":"S11","sector":11,"mult":1}, "7.4@": {"label":"T11","sector":11,"mult":3}, "7.5@": {"label":"S11","sector":11,"mult":1}, "7.6@": {"label":"D11","sector":11,"mult":2},
+        "5.0@": {"label":"S12","sector":12,"mult":1}, "5.3@": {"label":"T12","sector":12,"mult":3}, "5.5@": {"label":"S12","sector":12,"mult":1}, "5.6@": {"label":"D12","sector":12,"mult":2},
+        "0.0@": {"label":"S13","sector":13,"mult":1}, "0.2@": {"label":"T13","sector":13,"mult":3}, "0.4@": {"label":"S13","sector":13,"mult":1}, "4.5@": {"label":"D13","sector":13,"mult":2},
+        "10.3@": {"label":"S14","sector":14,"mult":1}, "10.4@": {"label":"T14","sector":14,"mult":3}, "10.5@": {"label":"S14","sector":14,"mult":1}, "10.6@": {"label":"D14","sector":14,"mult":2},
+        "3.0@": {"label":"S15","sector":15,"mult":1}, "3.1@": {"label":"T15","sector":15,"mult":3}, "3.2@": {"label":"S15","sector":15,"mult":1}, "4.2@": {"label":"D15","sector":15,"mult":2},
+        "11.0@": {"label":"S16","sector":16,"mult":1}, "11.3@": {"label":"T16","sector":16,"mult":3}, "11.5@": {"label":"S16","sector":16,"mult":1}, "11.6@": {"label":"D16","sector":16,"mult":2},
+        "10.1@": {"label":"S17","sector":17,"mult":1}, "10.0@": {"label":"T17","sector":17,"mult":3}, "10.2@": {"label":"S17","sector":17,"mult":1}, "8.3@": {"label":"D17","sector":17,"mult":2},
+        "1.2@": {"label":"S18","sector":18,"mult":1}, "1.4@": {"label":"T18","sector":18,"mult":3}, "1.5@": {"label":"S18","sector":18,"mult":1}, "1.6@": {"label":"D18","sector":18,"mult":2},
+        "6.1@": {"label":"S19","sector":19,"mult":1}, "6.0@": {"label":"T19","sector":19,"mult":3}, "6.3@": {"label":"S19","sector":19,"mult":1}, "8.5@": {"label":"D19","sector":19,"mult":2},
+        "3.3@": {"label":"S20","sector":20,"mult":1}, "3.4@": {"label":"T20","sector":20,"mult":3}, "3.5@": {"label":"S20","sector":20,"mult":1}, "3.6@": {"label":"D20","sector":20,"mult":2},
+        "8.0@": {"label":"BULL","sector":25,"mult":1}, "4.0@": {"label":"D-BULL","sector":25,"mult":2}, "BTN@": {"label":"BOUTON","sector":-1,"mult":1}
     };
 
     let activeMap = Object.assign({}, segmentMap);
@@ -386,8 +354,10 @@
     let boardLocked = false;
     let manualLock = false;
     let mode = '501';
-    let gameDblOption = 'standard';
     
+    let isDoubleInChecked = false;
+    let isDoubleOutChecked = false;
+
     let ghConfig = { owner: '', repo: '', token: '' };
     try {
         const savedGh = JSON.parse(localStorage.getItem('granboard_gh_config'));
@@ -406,13 +376,15 @@
     let pendingRawCode = null;
     let selectedNum = 20;
 
+    let writeCharGlobal = null; // Caractéristique d'écriture conservée pour piloter la cible
+
     function log(msg) {
         const box = document.getElementById('logs');
         box.innerHTML += '<br>> ' + msg;
         box.scrollTop = box.scrollHeight;
     }
 
-    // Création de la grille 1-20
+    // Grille numérique
     const numGrid = document.getElementById('numGrid');
     for (let i = 1; i <= 20; i++) {
         const b = document.createElement('button');
@@ -432,7 +404,7 @@
     }
 
     // ============================================================================
-    // 🔊 AUDIO RÉALISTE : LE BAR FRANÇAIS (POC BOISÉ + VOIX DU SYSTEME EN FR)
+    // 🔊 AUDIO & EFFET LUMINEUX INTERNE CIBLE (ÉVITE LA CHAUFFE)
     // ============================================================================
     let audioCtx = null;
     function getAudioCtx() {
@@ -441,14 +413,37 @@
         return audioCtx;
     }
 
-    // Impact sec et boisé d'une flèche qui se plante dans la cible
+    function flashScreenColor(colorHex) {
+        document.body.style.backgroundColor = colorHex;
+        setTimeout(function() {
+            document.body.style.backgroundColor = 'var(--bg)';
+        }, 150);
+    }
+
+    // PILOTAGE PHYSIQUE DES LED VIA BLUETOOTH
+    async function triggerPhysicalTargetLedFlash() {
+        if (!writeCharGlobal) return;
+        try {
+            // 1. Allume les LED de la cible de manière flash
+            const onCommand = new Uint8Array(Array.of(0x02, 0x01, 0x01, 0x00)); 
+            await writeCharGlobal.writeValue(onCommand);
+            
+            // 2. Éteint tout de suite après (500 millisecondes d'allumage pour montrer l'impact sans chauffer)
+            setTimeout(async function() {
+                try {
+                    const offCommand = new Uint8Array(Array.of(0x02, 0x00, 0x00, 0x00));
+                    await writeCharGlobal.writeValue(offCommand);
+                } catch(err) {}
+            }, 500);
+        } catch(e) {}
+    }
+
     function playDartPocSound() {
         if (!soundEnabled) return;
         try {
             const ctx = getAudioCtx();
             const now = ctx.currentTime;
             
-            // Impact aigu du plastique
             const osc1 = ctx.createOscillator();
             const gain1 = ctx.createGain();
             osc1.type = 'sine';
@@ -457,7 +452,6 @@
             gain1.gain.setValueAtTime(0.3, now);
             gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
             
-            // Résonance sourde du bois/caisson
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
             osc2.type = 'sine';
@@ -479,22 +473,19 @@
         setTimeout(function() {
             const u = new SpeechSynthesisUtterance(phrase);
             const voices = window.speechSynthesis.getVoices();
-            // Sélectionne la meilleure voix française naturelle disponible
             const frVoice = voices.find(function(v) {
                 return v.lang.includes('fr-FR') && (v.name.includes('Siri') || v.name.includes('Google') || v.name.includes('Chloé') || v.name.includes('Nicolas'));
-            }) || voices.find(function(v) {
-                return v.lang.includes('fr');
-            });
+            }) || voices.find(function(v) { return v.lang.includes('fr'); });
 
             if (frVoice) u.voice = frVoice;
             u.lang = 'fr-FR';
-            u.pitch = 0.95; // Légèrement plus chaleureux/grave (style barman)
-            u.rate  = 1.05; // Débit naturel
+            u.pitch = 0.95;
+            u.rate  = 1.05;
             window.speechSynthesis.speak(u);
         }, 80);
     }
 
-    // --- ÉCRAN 1 : GESTION DES JOUEURS (ACCUEIL) ---
+    // --- INTERFACE DE DÉMARRAGE DE PARTIE ---
     function openStartGamePanel() {
         const selectContainer = document.getElementById('selectPlayersList');
         selectContainer.innerHTML = '';
@@ -506,32 +497,43 @@
             div.className = 'player-selector-row';
             div.innerHTML = `
                 <span style="font-weight:bold; font-size:1rem;">👤 ${prof.name}</span>
-                <input type="checkbox" class="checkbox-custom" value="${id}" id="chk_${id}" checked style="width:20px; height:20px;">
+                <input type="checkbox" class="checkbox-custom" value="${id}" id="chk_${id}" checked>
             `;
             selectContainer.appendChild(div);
         });
         
         document.getElementById('startGameModal').style.display = 'flex';
+        toggleOptionBox();
     }
 
     function closeStartGamePanel() {
         document.getElementById('startGameModal').style.display = 'none';
     }
 
-    function toggleDoubleOptions() {
+    function toggleOptionBox() {
         const m = document.getElementById('gameMode').value;
-        const selector = document.getElementById('doubleOption');
+        const box = document.getElementById('doubleOptionsBox');
         if (m === '501' || m === '301') {
-            selector.style.display = 'block';
+            box.style.display = 'grid';
         } else {
-            selector.style.display = 'none';
+            box.style.display = 'none';
+        }
+    }
+
+    function toggleOptionCheck(elementId) {
+        if (elementId === 'optDoubleIn') {
+            isDoubleInChecked = !isDoubleInChecked;
+            document.getElementById('optDoubleIn').classList.toggle('checked', isDoubleInChecked);
+            document.getElementById('chkDoubleIn').checked = isDoubleInChecked;
+        } else if (elementId === 'optDoubleOut') {
+            isDoubleOutChecked = !isDoubleOutChecked;
+            document.getElementById('optDoubleOut').classList.toggle('checked', isDoubleOutChecked);
+            document.getElementById('chkDoubleOut').checked = isDoubleOutChecked;
         }
     }
 
     function confirmStartGame() {
         mode = document.getElementById('gameMode').value;
-        gameDblOption = document.getElementById('doubleOption').value;
-        
         const checkedInputs = document.querySelectorAll('#selectPlayersList input[type="checkbox"]:checked');
         players = [];
         
@@ -556,7 +558,6 @@
 
         closeStartGamePanel();
         
-        // Changement d'écran : on passe à l'Arène de Jeu
         document.getElementById('screenSetup').classList.remove('active');
         document.getElementById('screenGame').classList.add('active');
         
@@ -568,19 +569,19 @@
         updateLockUI();
         renderUI();
         
-        speakFrench("C'est parti ! " + players[currentPlayer].name + ", à toi de jouer.");
-        log("🎮 Partie lancée : " + mode);
+        speakFrench("Que le meilleur gagne ! " + players[currentPlayer].name + ", c'est à toi.");
+        log("Partie lancée : " + mode);
     }
 
     function quitGame() {
         if (confirm("Voulez-vous vraiment abandonner la partie en cours ?")) {
             document.getElementById('screenGame').classList.remove('active');
             document.getElementById('screenSetup').classList.add('active');
-            log("🛑 Partie abandonnée.");
+            log("Partie abandonnée.");
         }
     }
 
-    // --- ÉCRAN MODAL PROFILS ---
+    // --- GESTION PROFILS JOUEURS ---
     function openAddPlayerModal() {
         document.getElementById('newProfileInput').value = '';
         document.getElementById('addPlayerModal').style.display = 'flex';
@@ -611,7 +612,7 @@
     }
 
     async function deleteSavedProfile(id) {
-        if (confirm("Supprimer ce profil de l'équipe ?")) {
+        if (confirm("Supprimer ce profil ?")) {
             delete globalProfiles[id];
             localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
             renderExistingProfilesList();
@@ -623,7 +624,7 @@
         const input = document.getElementById('newProfileInput');
         const name = input.value.trim().toUpperCase();
         if (!name) {
-            alert("Entrez un prénom !");
+            alert("Saisissez un prénom !");
             return;
         }
         const id = 'p_' + Date.now();
@@ -640,12 +641,11 @@
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
         renderExistingProfilesList();
         input.value = '';
-        log('👤 Profil créé : ' + name);
         await pushToGithub(false);
     }
 
     async function clearLocalProfilesOnly() {
-        if (confirm("Purger la mémoire locale pour recharger depuis GitHub ?")) {
+        if (confirm("Réinitialiser et recharger depuis GitHub ?")) {
             globalProfiles = {};
             localStorage.removeItem('granboard_profiles');
             await pullFromGithub(true);
@@ -653,14 +653,14 @@
         }
     }
 
-    // --- CONNEXION BLUETOOTH & CIBLE ---
+    // --- BLUETOOTH CONCTIVITY ---
     async function connectGranBoard() {
         if (!navigator.bluetooth) {
             alert("Bluetooth non compatible ou bloqué.");
             return;
         }
         try {
-            log("Connexion à la Gran Board...");
+            log("Connexion à la cible...");
             const device = await navigator.bluetooth.requestDevice({
                 acceptAllDevices: true,
                 optionalServices: Array.of(GRAN_SERVICE)
@@ -670,11 +670,21 @@
             const char = await service.getCharacteristic(GRAN_NOTIFY);
             await char.startNotifications();
 
+            // Récupération de la caractéristique d'écriture et extinction des LED d'ambiance
+            try {
+                writeCharGlobal = await service.getCharacteristic(GRAN_WRITE);
+                const turnOffLedsCommand = new Uint8Array(Array.of(0x02, 0x00, 0x00, 0x00)); 
+                await writeCharGlobal.writeValue(turnOffLedsCommand);
+                log("💡 LED de la cible configurées en mode économie / flash.");
+            } catch (e) {
+                log("Note : Caractéristique d'écriture restreinte ou gérée par le système.");
+            }
+
             document.getElementById('bleBadge').textContent = "Connecté";
             document.getElementById('bleBadge').classList.add('ok');
             document.getElementById('btnConnect').style.display = 'none';
-            log("✅ Gran Board 3s connectée !");
-            speakFrench("Cible connectée. Prêt à jouer !");
+            log("✅ Cible Gran Board 3s connectée !");
+            speakFrench("Cible connectée. Bon jeu !");
 
             char.addEventListener('characteristicvaluechanged', function(event) {
                 const val = event.target.value;
@@ -705,7 +715,7 @@
             const hit = activeMap[code];
             registerHit(hit.label, hit.sector, hit.mult);
         } else {
-            log('Bouton cible (' + code + ')');
+            log('Signal inconnu (' + code + ')');
             nextTurn();
         }
     }
@@ -717,10 +727,22 @@
         const p = players[currentPlayer];
         const pts = (sector === 25 && mult === 2) ? 50 : (sector * mult);
 
-        // Son d'impact boisé immédiat
+        // 1. Flash visuel sur l'écran
+        if (sector === 25) {
+            flashScreenColor('#eab308');
+        } else if (mult === 3) {
+            flashScreenColor('#10b981');
+        } else if (mult === 2) {
+            flashScreenColor('#3b82f6');
+        } else {
+            flashScreenColor('#ef4444');
+        }
+
+        // 2. Allumage flash temporaire de la cible physique (0.5 seconde)
+        triggerPhysicalTargetLedFlash();
+
         playDartPocSound();
 
-        // Annonce parlée en français du coup
         let verbalLabel = label.replace('S', '').replace('D', 'Double ').replace('T', 'Triple ');
         if (label === 'BULL') verbalLabel = 'Bulle';
         if (label === 'D-BULL') verbalLabel = 'Double Bulle';
@@ -739,15 +761,12 @@
         if (mode === '501' || mode === '301') {
             const newScore = p.score - pts;
             
-            // Gestion Double In
-            const isDoubleIn = gameDblOption.includes('double-in');
             const hasStarted = p.score < (mode === '501' ? 501 : 301);
-            if (isDoubleIn && !hasStarted && mult !== 2 && sector !== 25) {
-                // Ignore le tir tant qu'il n'a pas fait de double
+            if (isDoubleInChecked && !hasStarted && mult !== 2 && sector !== 25) {
                 p.darts.push("Manqué");
             } else {
                 p.darts.push(label);
-                if (newScore < 0 || (newScore === 1 && gameDblOption.includes('double-out'))) {
+                if (newScore < 0 || (newScore === 1 && isDoubleOutChecked)) {
                     speakFrench("Ça dépasse !");
                     const dartsCount = p.darts.length - 1;
                     if (dartsCount > 0 && historyStack.length >= dartsCount) {
@@ -755,8 +774,7 @@
                     }
                     boardLocked = true;
                 } else if (newScore === 0) {
-                    // Vérification Double Out
-                    if (gameDblOption.includes('double-out') && mult !== 2 && sector !== 25) {
+                    if (isDoubleOutChecked && mult !== 2 && sector !== 25) {
                         speakFrench("Ça dépasse, il faut finir sur un double !");
                         const dartsCount = p.darts.length - 1;
                         p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
@@ -764,7 +782,7 @@
                     } else {
                         won = true;
                         p.score = 0;
-                        speakFrench("Et c'est gagné pour " + p.name + " ! Tournée générale !");
+                        speakFrench("Partie gagnée ! Bien joué " + p.name + " !");
                         await handleWin(p);
                         setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
                     }
@@ -778,7 +796,7 @@
                 p.score += 1;
                 if (p.score > 20) {
                     won = true;
-                    speakFrench("Victoire ! Bien joué.");
+                    speakFrench("Partie terminée, victoire !");
                     await handleWin(p);
                 }
             }
@@ -800,7 +818,7 @@
 
         if (p.darts.length >= 3) {
             boardLocked = true;
-            if (!won) speakFrench("C'est tout pour ce tour, retirez les fléchettes.");
+            if (!won) speakFrench("C'est bon, à vous de retirer.");
         }
 
         document.getElementById('lastHitText').textContent = label + ' (' + pts + ' pts)';
@@ -809,13 +827,12 @@
     }
 
     async function handleWin(winningPlayer) {
-        players.forEach(function(p) {
+        players.forEach(async (p) => {
             if (p.profileId && globalProfiles[p.profileId]) {
                 const prof = globalProfiles[p.profileId];
                 prof.gamesPlayed = (prof.gamesPlayed || 0) + 1;
                 prof.totalPoints = (prof.totalPoints || 0) + p.stats.totalPoints;
                 prof.totalDarts = (prof.totalDarts || 0) + p.stats.totalDarts;
-                
                 if (p.profileId === winningPlayer.profileId) {
                     prof.wins = (prof.wins || 0) + 1;
                 }
@@ -827,7 +844,6 @@
 
     function undoLast() {
         if (historyStack.length === 0) return;
-        playNote(300, 0.01, 0.1, 'sine', 0.2);
         const prev = historyStack.pop();
         players = prev.players;
         currentPlayer = prev.currentPlayer;
@@ -845,7 +861,7 @@
         players[currentPlayer].turnPoints = 0;
         boardLocked = false;
         manualLock = false;
-        speakFrench(players[currentPlayer].name + ", à toi de jouer !");
+        speakFrench("C'est au tour de " + players[currentPlayer].name);
         updateLockUI();
         renderUI();
     }
@@ -863,7 +879,7 @@
         btn.className = isLocked ? 'btn btn-orange' : 'btn btn-purple';
     }
 
-    // --- SYNCHRONISATION GITHUB ---
+    // --- GITHUB SYNC ---
     async function saveGithubConfig() {
         ghConfig.owner = document.getElementById('ghOwnerInput').value.trim();
         ghConfig.repo  = document.getElementById('ghRepoInput').value.trim();
@@ -914,7 +930,7 @@
         } catch (e) {}
     }
 
-    // --- STATISTIQUES MODALES ---
+    // --- STATISTIQUES ---
     function openStatsModal() {
         document.getElementById('statsModal').style.display = 'flex';
         const leaderboard = document.getElementById('leaderboardContent');
