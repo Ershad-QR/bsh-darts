@@ -254,21 +254,21 @@
     <div class="log-box" id="logs">Initialisation...</div>
 </div>
 
-<!-- MODALE 1 : AJOUTER UN JOUEUR (CHOISIR PROFIL OU CRÉER PROFIL) -->
+<!-- MODALE 1 : AJOUTER UN JOUEUR / SUPPRIMER ANCIENS PROFILS -->
 <div class="modal-bg" id="addPlayerModal">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; color:var(--accent);">👤 Qui rejoint la partie ?</h3>
-            <button type="button" class="btn btn-dark" style="padding:6px 10px; font-size:0.75rem;" onclick="pullFromGithub()">🔄 Actualiser</button>
+            <h3 style="margin:0; color:var(--accent);">👤 Profils & Joueurs</h3>
+            <button type="button" class="btn btn-red" style="padding:5px 10px; font-size:0.72rem;" onclick="clearLocalProfilesOnly()">🧹 Purger cache local</button>
         </div>
         
         <div class="stats-section" style="margin-top:0;">
-            <div class="stats-title">1. Choisir un profil enregistré :</div>
-            <div id="existingProfilesList" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;"></div>
+            <div class="stats-title">1. Choisir (ou supprimer 🗑️) un profil :</div>
+            <div id="existingProfilesList" style="display:flex; flex-direction:column; gap:6px; max-height:190px; overflow-y:auto;"></div>
         </div>
 
         <div class="stats-section">
-            <div class="stats-title">2. Ou créer un nouveau profil :</div>
+            <div class="stats-title">2. Créer un nouveau profil :</div>
             <input type="text" id="newProfileInput" class="input-text-modern" placeholder="Entrez votre prénom (ex: Ershad)">
             <button type="button" class="btn btn-green" onclick="createAndAddProfile()" style="width:100%;">✨ Créer et sauvegarder</button>
         </div>
@@ -512,7 +512,7 @@
     }
 
     // ============================================================================
-    // 🏟️ MOTEUR AUDIO "PDC STADIUM & ARCADE" (Vrais sons de foule + Synthé Arcade)
+    // 🏟️ MOTEUR AUDIO "PDC STADIUM & ARCADE"
     // ============================================================================
     let audioCtx = null;
     function getAudioCtx() {
@@ -521,7 +521,6 @@
         return audioCtx;
     }
 
-    // Vrais fichiers audio d'ambiance (Bibliothèque Google Sounds officielle en HTTPS)
     const sfxCrowdCheer = new Audio('https://actions.google.com/sounds/v1/crowds/team_cheer.ogg');
     const sfxBigCrowd   = new Audio('https://actions.google.com/sounds/v1/crowds/battle_crowd_celebrate_stutter.ogg');
     sfxCrowdCheer.volume = 0.55;
@@ -536,14 +535,12 @@
         } catch(e) {}
     }
 
-    // Bruit réaliste de la fléchette qui claque dans le segment plastique (bruit blanc filtré + impact)
     function playDartThud() {
         if (!soundEnabled) return;
         try {
             const ctx = getAudioCtx();
             const now = ctx.currentTime;
 
-            // 1. Burst de bruit percussif (le claquement sec des pointes plastiques dans la grille)
             const bufferSize = ctx.sampleRate * 0.04;
             const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
             const output = noiseBuffer.getChannelData(0);
@@ -566,7 +563,6 @@
             noiseGain.connect(ctx.destination);
             whiteNoise.start(now);
 
-            // 2. Résonance sourde du caisson de la Gran Board
             const bodyOsc = ctx.createOscillator();
             const bodyGain = ctx.createGain();
             bodyOsc.type = 'sine';
@@ -582,7 +578,6 @@
         } catch(e) {}
     }
 
-    // Jingles d'Arcade Polyphoniques (Style borne d'arcade GranBoard / Dartslive)
     function playNote(freq, startOffset, duration, type, vol) {
         const ctx = getAudioCtx();
         const now = ctx.currentTime + startOffset;
@@ -610,14 +605,12 @@
                 playNote(659.25, 0.10, 0.12, 'triangle', 0.25);
                 playNote(1046.50, 0.16, 0.22, 'triangle', 0.28);
             } else if (type === 'triple') {
-                // Fanfare Arcade Triple
                 playNote(523.25, 0.04, 0.10, 'sawtooth', 0.18);
                 playNote(659.25, 0.10, 0.10, 'sawtooth', 0.18);
                 playNote(783.99, 0.16, 0.10, 'sawtooth', 0.20);
                 playNote(1046.50, 0.22, 0.30, 'sawtooth', 0.24);
                 playNote(1318.51, 0.22, 0.30, 'triangle', 0.20);
             } else if (type === 'bull') {
-                // Fanfare Bullseye + Applaudissements de foule !
                 playNote(440, 0.03, 0.12, 'sawtooth', 0.25);
                 playNote(554.37, 0.10, 0.12, 'sawtooth', 0.25);
                 playNote(659.25, 0.17, 0.12, 'sawtooth', 0.25);
@@ -630,7 +623,6 @@
         } catch(e) {}
     }
 
-    // Speaker Mastercaller PDC (Voix grave britannique uniquement sur les moments forts et fins de volées !)
     function announcePDC(phrase, withBigCrowd) {
         if (!soundEnabled) return;
         if (withBigCrowd) playCrowd(true);
@@ -640,7 +632,6 @@
         setTimeout(function() {
             const u = new SpeechSynthesisUtterance(phrase);
             const voices = window.speechSynthesis.getVoices();
-            // Recherche d'une voix masculine britannique (style PDC Mastercaller)
             const ukMale = voices.find(function(v) {
                 return v.lang.includes('en-GB') && (v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Arthur') || v.name.includes('Oliver'));
             }) || voices.find(function(v) {
@@ -651,8 +642,8 @@
 
             if (ukMale) u.voice = ukMale;
             u.lang = 'en-GB';
-            u.pitch = 0.72; // Voix grave de speaker d'arène
-            u.rate  = 0.88; // Cadence posée et puissante
+            u.pitch = 0.72;
+            u.rate  = 0.88;
             u.volume = 1.0;
             window.speechSynthesis.speak(u);
         }, 180);
@@ -711,7 +702,7 @@
         localStorage.setItem('granboard_gh_config', JSON.stringify(ghConfig));
         updateGhBadge();
         closeGithubModal();
-        await pushToGithub();
+        await pushToGithub(false);
     }
 
     function copyMagicLink() {
@@ -726,7 +717,7 @@
         const baseUrl = window.location.origin + window.location.pathname;
         const magicUrl = baseUrl + '?gh=' + encodeURIComponent(encoded);
         navigator.clipboard?.writeText(magicUrl);
-        prompt("Copiez ce Lien Magique et ouvrez-le sur votre téléphone ou PC pour relier automatiquement les profils :", magicUrl);
+        prompt("Copiez ce Lien Magique et ouvrez-le sur votre téléphone ou PC :", magicUrl);
     }
 
     function mergeProfiles(remoteProfiles) {
@@ -749,7 +740,7 @@
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
     }
 
-    async function pullFromGithub() {
+    async function pullFromGithub(replaceLocal) {
         if (!ghConfig.owner || !ghConfig.repo) return null;
         const apiUrl = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json?t=' + Date.now();
         const headers = { 'Accept': 'application/vnd.github+json' };
@@ -761,7 +752,12 @@
                 const data = await res.json();
                 const jsonStr = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
                 const remoteProfiles = JSON.parse(jsonStr);
-                mergeProfiles(remoteProfiles);
+                if (replaceLocal) {
+                    globalProfiles = remoteProfiles || {};
+                    localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+                } else {
+                    mergeProfiles(remoteProfiles);
+                }
                 renderUI();
                 renderExistingProfilesList();
                 log("☁️ Profils synchronisés depuis GitHub !");
@@ -773,18 +769,33 @@
         return null;
     }
 
-    async function pushToGithub() {
+    async function pushToGithub(skipMerge) {
         if (!ghConfig.owner || !ghConfig.repo || !ghConfig.token) {
-            log("ℹ️ Profil sauvegardé sur cet appareil.");
+            log("ℹ️ Modifications enregistrées localement.");
             return;
         }
         try {
-            log("☁️ Sauvegarde dans GitHub (profiles.json)...");
-            const currentSha = await pullFromGithub();
+            log("☁️ Mise à jour de GitHub (profiles.json)...");
+            let currentSha = null;
+            if (skipMerge) {
+                // On récupère uniquement le SHA sans réimporter le profil qu'on vient de supprimer !
+                const apiUrlGet = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json?t=' + Date.now();
+                const resGet = await fetch(apiUrlGet, {
+                    headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + ghConfig.token },
+                    cache: 'no-store'
+                });
+                if (resGet.status === 200) {
+                    const dataGet = await resGet.json();
+                    currentSha = dataGet.sha;
+                }
+            } else {
+                currentSha = await pullFromGithub(false);
+            }
+
             const apiUrl = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json';
             const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(globalProfiles, null, 2))));
             const bodyObj = {
-                message: "Synchronisation profils GranBoard",
+                message: "Mise a jour profils GranBoard",
                 content: contentBase64
             };
             if (currentSha) bodyObj.sha = currentSha;
@@ -800,7 +811,7 @@
             });
 
             if (res.ok) {
-                log("✅ Fichier profiles.json enregistré dans votre GitHub !");
+                log("✅ GitHub (profiles.json) mis à jour !");
                 renderUI();
             } else {
                 const errData = await res.json();
@@ -811,12 +822,12 @@
         }
     }
 
-    // --- GESTION DES PROFILS ET AJOUT DE JOUEUR ---
+    // --- GESTION ET SUPPRESSION DES PROFILS ---
     async function openAddPlayerModal() {
         document.getElementById('newProfileInput').value = '';
         document.getElementById('addPlayerModal').style.display = 'flex';
         renderExistingProfilesList();
-        await pullFromGithub();
+        await pullFromGithub(false);
     }
     function closeAddPlayerModal() {
         document.getElementById('addPlayerModal').style.display = 'none';
@@ -838,9 +849,34 @@
             row.innerHTML = '<button type="button" class="btn btn-blue" style="flex:1; justify-content:space-between; padding:10px;" onclick="selectExistingProfile(\'' + id + '\')">' +
                 '<span>👤 ' + prof.name + '</span>' +
                 '<span style="font-size:0.75rem; opacity:0.85;">🏆 ' + (prof.wins || 0) + ' vict.</span>' +
-                '</button>';
+                '</button>' +
+                '<button type="button" class="btn btn-red" style="padding:10px 12px;" onclick="deleteSavedProfile(\'' + id + '\')" title="Supprimer définitivement ce profil">🗑️</button>';
             container.appendChild(row);
         });
+    }
+
+    async function deleteSavedProfile(id) {
+        const prof = globalProfiles[id];
+        if (!prof) return;
+        if (confirm('Supprimer définitivement le profil "' + prof.name + '" (sur ce téléphone et sur GitHub) ?')) {
+            delete globalProfiles[id];
+            localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+            renderExistingProfilesList();
+            renderUI();
+            log('🗑️ Profil supprimé : ' + prof.name);
+            await pushToGithub(true); // Écrase sur GitHub sans réimporter l'ancien
+        }
+    }
+
+    async function clearLocalProfilesOnly() {
+        if (confirm("Vider tous les anciens profils stockés dans la mémoire de ce téléphone (et recharger uniquement ceux de GitHub) ?")) {
+            globalProfiles = {};
+            localStorage.removeItem('granboard_profiles');
+            renderExistingProfilesList();
+            renderUI();
+            log("🧹 Cache de profils du téléphone vidé !");
+            await pullFromGithub(true);
+        }
     }
 
     function selectExistingProfile(id) {
@@ -872,7 +908,7 @@
         log('👤 Nouveau profil créé : ' + name);
         addActivePlayer(name, id);
         closeAddPlayerModal();
-        await pushToGithub();
+        await pushToGithub(false);
     }
 
     function addActivePlayer(name, profileId) {
@@ -895,7 +931,7 @@
             return;
         }
         const removed = players.splice(idx, 1);
-        log('🗑️ Joueur retiré : ' + removed.at(0).name);
+        log('🗑️ Joueur retiré de la partie : ' + removed.at(0).name);
         if (currentPlayer >= players.length) currentPlayer = 0;
         renderUI();
     }
@@ -986,7 +1022,6 @@
         const p = players[currentPlayer];
         const pts = (sector === 25 && mult === 2) ? 50 : (sector * mult);
 
-        // 1. Son d'impact physique + Jingle Arcade immédiat
         if (sector === 25) {
             playTone('bull');
             if (mult === 2) announcePDC("BULLSEYE!", false);
@@ -1059,7 +1094,6 @@
             }
         }
 
-        // 2. Fin de la volée de 3 fléchettes : le Speaker PDC annonce le total de la volée !
         if (p.darts.length >= 3) {
             boardLocked = true;
             if (!busted && !won && (mode === '501' || mode === '301')) {
@@ -1098,7 +1132,7 @@
             }
         });
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-        await pushToGithub();
+        await pushToGithub(false);
     }
 
     function undoLast() {
@@ -1139,9 +1173,9 @@
         btn.className = isLocked ? 'btn btn-orange' : 'btn btn-purple';
     }
 
-    // --- STATISTIQUES & COMPARATIFS (+ OUVERTURE NOUVEL ONGLET) ---
+    // --- STATISTIQUES & COMPARATIFS ---
     async function openStatsModal() {
-        await pullFromGithub();
+        await pullFromGithub(false);
         document.getElementById('statsModal').style.display = 'flex';
         const leaderboard = document.getElementById('leaderboardContent');
         const ids = Object.keys(globalProfiles);
@@ -1332,7 +1366,6 @@
         return '⊗';
     }
 
-    // Préchargement des voix du navigateur pour le Mastercaller PDC
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
         window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
@@ -1340,8 +1373,8 @@
 
     updateGhBadge();
     initGame();
-    pullFromGithub();
-    log("✅ Ambiance PDC Stadium + 83 zones prêtes !");
+    pullFromGithub(false);
+    log("✅ Ambiance PDC + Suppression profils prêts !");
 </script>
 </body>
 </html>
