@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GranBoard Pro - Cloud</title>
+    <title>GranBoard Pro - Ultimate</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -63,7 +63,6 @@
             padding: 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem;
         }
         
-        /* Section Profils Partagés */
         .profile-bar {
             background: rgba(139, 92, 246, 0.15);
             border: 1px dashed var(--purple);
@@ -81,7 +80,6 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         
-        /* Liste des joueurs actifs */
         .players-list {
             display: flex;
             flex-direction: column;
@@ -121,7 +119,8 @@
             text-align: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-weight: bold;
         }
         .c-grid-name { text-align: left; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
+        .c-cell-num { color: var(--accent); font-size: 0.85rem; }
+
         .last-hit-box {
             background: var(--card); border-radius: 14px; padding: 12px;
             display: flex; justify-content: space-between; align-items: center;
@@ -130,6 +129,7 @@
         
         .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         
+        /* Modales */
         .modal-bg {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             display: none; align-items: center; justify-content: center; padding: 15px; z-index: 100;
@@ -137,6 +137,7 @@
         .modal {
             background: var(--card); width: 100%; max-width: 440px; border-radius: 18px;
             padding: 16px; border: 1px solid #475569;
+            max-height: 90vh; overflow-y: auto;
         }
         .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0; }
         .num-btn {
@@ -148,6 +149,54 @@
         .log-box {
             background: #020617; color: #38bdf8; font-family: monospace;
             font-size: 0.72rem; padding: 10px; border-radius: 10px; height: 80px; overflow-y: auto;
+        }
+
+        /* Styles spécifiques pour le panneau de Statistiques */
+        .stats-section {
+            margin-top: 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 12px;
+        }
+        .stats-title {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .ranking-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+        .bar-container {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            background: var(--primary);
+            height: 100%;
+            border-radius: 4px;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .comparison-card {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -172,9 +221,10 @@
             <span style="font-size:0.8rem; font-weight:800; color:var(--purple);">☁️ EQUIPE SYNCHRONISÉE</span>
             <span id="groupCodeDisplay" style="font-size:0.8rem; font-weight:bold; color:white;">Code : aucun</span>
         </div>
-        <div style="display:flex; gap:6px;">
-            <button class="btn btn-purple" onclick="createOrJoinGroup()" style="padding:8px; flex:1; font-size:0.75rem;">🔗 Créer / Rejoindre Equipe</button>
-            <button class="btn btn-dark" onclick="addCloudPlayerPrompt()" style="padding:8px; font-size:0.75rem;">👤 Nouveau Profil</button>
+        <div style="display:flex; gap:4px;">
+            <button class="btn btn-purple" onclick="createOrJoinGroup()" style="padding:8px; flex:1; font-size:0.7rem;">🔗 Config Équipe</button>
+            <button class="btn btn-dark" onclick="addCloudPlayerPrompt()" style="padding:8px; font-size:0.7rem;">👤 Nouveau Profil</button>
+            <button class="btn btn-orange" onclick="openStatsModal()" style="padding:8px; font-size:0.7rem; font-weight:bold;">📊 Stats & Duels</button>
         </div>
     </div>
 
@@ -190,16 +240,12 @@
         <button class="btn btn-dark" onclick="initGame()">🔄 Reset</button>
     </div>
 
-    <!-- Alerte Bouclier Anti-retrait -->
     <div class="shield-banner" id="shieldBanner">
         🛡️ CIBLE VERROUILLÉE (Retirez vos flèches sans risque !)<br>
         <span style="font-size:0.8rem; font-weight:normal;">Appuyez sur "Joueur Suivant" quand vous avez retiré les flèches.</span>
     </div>
 
-    <!-- Liste des Joueurs actifs -->
     <div class="players-list" id="playersList"></div>
-    
-    <!-- Tableau Cricket -->
     <div class="cricket-board" id="cricketBoard"></div>
 
     <!-- Dernier coup -->
@@ -246,11 +292,42 @@
     </div>
 </div>
 
+<!-- Fenêtre Modale : Statistiques & Duels Comparatifs -->
+<div class="modal-bg" id="statsModal">
+    <div class="modal" style="max-width: 480px;">
+        <h3 style="margin:0 0 10px 0; color:var(--accent); text-align:center;">📊 Statistiques & Duels d'Équipe</h3>
+        
+        <!-- Hall of Fame / Classement -->
+        <div class="stats-section">
+            <div class="stats-title">🏆 Classement des Joueurs (% de Victoires)</div>
+            <div id="leaderboardContent">Aucun profil enregistré.</div>
+        </div>
+
+        <!-- Outil de Duel / Comparateur Face-à-Face -->
+        <div class="stats-section">
+            <div class="stats-title">🥊 Comparateur Face-à-Face</div>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <select id="duelP1" onchange="updateDuelCompare()" style="flex:1; padding:6px;"></select>
+                <div style="align-self:center; font-weight:bold; color:var(--accent);">VS</div>
+                <select id="duelP2" onchange="updateDuelCompare()" style="flex:1; padding:6px;"></select>
+            </div>
+            <div class="comparison-grid" id="duelGridContent">
+                <!-- Rempli dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Boutons d'action bas de fenêtre -->
+        <div style="display:flex; gap:8px; margin-top:15px;">
+            <button class="btn btn-dark" onclick="closeStatsModal()" style="flex:1;">Fermer</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const GRAN_SERVICE = '442f1570-8a00-9a28-cbe1-e1d4212d53eb';
     const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
 
-    // Base de décodage des segments GranBoard 3s
+    // Base de données des segments GranBoard 3s
     const segmentMap = {
         "4.0@": { label: "BULL", sector: 25, mult: 1 },
         "8.0@": { label: "D-BULL", sector: 25, mult: 2 },
@@ -277,535 +354,4 @@
         "1.18@": { label: "S5", sector: 5, mult: 1 }, "11.18@": { label: "S5", sector: 5, mult: 1 }, "2.18@": { label: "D5", sector: 5, mult: 2 }, "3.18@": { label: "T5", sector: 5, mult: 3 }
     };
 
-    // --- BASE DE DONNÉES CLOUD DES PROFILS JOUEURS ---
-    let groupCode = localStorage.getItem('granboard_group_code') || '';
-    let globalProfiles = JSON.parse(localStorage.getItem('granboard_profiles')) || {};
-
-    let soundEnabled = true;
-    let boardLocked = false;
-    let manualLock = false;
-    let mode = '501';
-    
-    // Joueurs actifs dans la partie en cours
-    let players = [
-        { name: "JOUEUR 1", score: 501, darts: [], cricket: { 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0 }, profileId: null },
-        { name: "JOUEUR 2", score: 501, darts: [], cricket: { 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0 }, profileId: null }
-    ];
-    let currentPlayer = 0;
-    let historyStack = [];
-    let modalMode = 'add';
-    let selectedNum = 20;
-
-    const numGrid = document.getElementById('numGrid');
-    for (let i = 1; i <= 20; i++) {
-        const b = document.createElement('button');
-        b.className = 'num-btn' + (i === 20 ? ' sel' : '');
-        b.textContent = i;
-        b.onclick = () => selectNumber(i);
-        b.id = 'numBtn_' + i;
-        numGrid.appendChild(b);
-    }
-
-    function selectNumber(n) {
-        selectedNum = n;
-        for (let i = 1; i <= 20; i++) {
-            document.getElementById('numBtn_' + i).classList.toggle('sel', i === n);
-        }
-    }
-
-    function log(msg) {
-        const box = document.getElementById('logs');
-        box.innerHTML += `<br>> ${msg}`;
-        box.scrollTop = box.scrollHeight;
-    }
-
-    // --- BRUITAGES ET SYNTHÈSE VOCALE ---
-    function playDartHitSound() {
-        if (!soundEnabled) return;
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const now = ctx.currentTime;
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'triangle';
-            osc1.frequency.setValueAtTime(1400, now);
-            osc1.frequency.exponentialRampToValueAtTime(120, now + 0.02);
-            gain1.gain.setValueAtTime(0.4, now);
-            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.02);
-            
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(220, now + 0.01);
-            osc2.frequency.exponentialRampToValueAtTime(50, now + 0.06);
-            gain2.gain.setValueAtTime(0.2, now + 0.01);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
-
-            osc1.connect(gain1); gain1.connect(ctx.destination);
-            osc2.connect(gain2); gain2.connect(ctx.destination);
-
-            osc1.start(now); osc1.stop(now + 0.03);
-            osc2.start(now + 0.01); osc2.stop(now + 0.07);
-        } catch(e) {}
-    }
-
-    function playTone(type) {
-        if (!soundEnabled) return;
-        try {
-            playDartHitSound();
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            const now = ctx.currentTime;
-
-            if (type === 'double') {
-                osc.frequency.setValueAtTime(587, now + 0.08);
-                osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
-                gain.gain.setValueAtTime(0.2, now + 0.08);
-                osc.start(now + 0.08); osc.stop(now + 0.25);
-            } else if (type === 'triple' || type === 'bull') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523, now + 0.08);
-                osc.frequency.setValueAtTime(659, now + 0.16);
-                osc.frequency.setValueAtTime(1046, now + 0.24);
-                gain.gain.setValueAtTime(0.25, now + 0.08);
-                osc.start(now + 0.08); osc.stop(now + 0.38);
-            } else if (type === 'undo' || type === 'bust') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(280, now);
-                osc.frequency.linearRampToValueAtTime(120, now + 0.25);
-                gain.gain.setValueAtTime(0.3, now);
-                osc.start(); osc.stop(now + 0.25);
-            }
-        } catch(e) {}
-    }
-
-    function speak(text) {
-        if (!soundEnabled || !('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-        setTimeout(() => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'fr-FR';
-            u.rate = 1.05;
-            window.speechSynthesis.speak(u);
-        }, 120);
-    }
-
-    function toggleSound() {
-        soundEnabled = !soundEnabled;
-        document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Son' : '🔇 Muet';
-    }
-
-    // --- SYNCHRONISATION DES PROFILS DANS LE CLOUD ---
-    async function syncCloud(direction) {
-        if (!groupCode) return;
-        const url = `https://api.keyvalue.xyz/${groupCode}/bsh-darts-profiles`;
-        try {
-            if (direction === 'upload') {
-                await fetch(url, {
-                    method: 'POST',
-                    body: JSON.stringify(globalProfiles),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            } else if (direction === 'download') {
-                const res = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && typeof data === 'object') {
-                        globalProfiles = data;
-                        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-                    }
-                }
-            }
-        } catch (e) {
-            log("⚠️ Erreur de synchronisation cloud.");
-        }
-    }
-
-    async function createOrJoinGroup() {
-        let code = prompt("Saisissez un Code Équipe existant pour synchroniser les profils, ou inventez-en un nouveau (ex: bsh-equipe-1) :", groupCode);
-        if (code) {
-            code = code.trim().toLowerCase();
-            groupCode = code;
-            localStorage.setItem('granboard_group_code', groupCode);
-            document.getElementById('groupCodeDisplay').textContent = `Code : ${groupCode}`;
-            log(`☁️ Connexion à l'équipe Cloud : "${groupCode}"`);
-            await syncCloud('download');
-            renderUI();
-        }
-    }
-
-    async function addCloudPlayerPrompt() {
-        const name = prompt("Créer un nouveau profil de joueur permanent :");
-        if (name && name.trim() !== "") {
-            const id = 'p_' + Date.now();
-            globalProfiles[id] = {
-                name: name.trim().toUpperCase(),
-                gamesPlayed: 0,
-                wins: 0,
-                best501Darts: 99
-            };
-            localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-            await syncCloud('upload');
-            log(`👤 Profil permanent créé : ${globalProfiles[id].name}`);
-            addActivePlayer(globalProfiles[id].name, id);
-        }
-    }
-
-    function addActivePlayerFromProfiles() {
-        const ids = Object.keys(globalProfiles);
-        if (ids.length === 0) {
-            alert("Aucun profil permanent disponible. Créez-en un via le bouton 'Nouveau Profil'.");
-            return;
-        }
-        let listText = "Choisissez le numéro du profil à ajouter à la partie :\n";
-        ids.forEach((id, index) => {
-            listText += `${index + 1} - ${globalProfiles[id].name} (Victoires: ${globalProfiles[id].wins})\n`;
-        });
-        const choice = prompt(listText);
-        const idx = parseInt(choice) - 1;
-        if (idx >= 0 && idx < ids.length) {
-            const selectedId = ids[idx];
-            addActivePlayer(globalProfiles[selectedId].name, selectedId);
-        }
-    }
-
-    function addActivePlayer(name, profileId) {
-        players.push({
-            name: name,
-            score: mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0)),
-            darts: [],
-            cricket: { 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0 },
-            profileId: profileId || null
-        });
-        renderUI();
-    }
-
-    function removePlayer(idx) {
-        if (players.length <= 1) {
-            alert("Il doit y avoir au moins un joueur actif.");
-            return;
-        }
-        if (confirm(`Retirer ${players[idx].name} de la partie ?`)) {
-            players.splice(idx, 1);
-            if (currentPlayer >= players.length) currentPlayer = 0;
-            renderUI();
-        }
-    }
-
-    // --- BLUETOOTH & CIBLE ---
-    document.getElementById('btnConnect').addEventListener('click', async () => {
-        if (!navigator.bluetooth) {
-            alert("Ouvrez la page dans Google Chrome ou Bluefy !");
-            return;
-        }
-        try {
-            log("Recherche de la cible GRANBOARD...");
-            const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: [GRAN_SERVICE]
-            });
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService(GRAN_SERVICE);
-            const char = await service.getCharacteristic(GRAN_NOTIFY);
-            await char.startNotifications();
-
-            const badge = document.getElementById('bleBadge');
-            badge.textContent = "Connecté";
-            badge.classList.add('ok');
-            document.getElementById('btnConnect').style.display = 'none';
-            log("✅ Gran Board 3s connectée !");
-            speak("Cible connectée, bonne partie !");
-
-            char.addEventListener('characteristicvaluechanged', (event) => {
-                const val = event.target.value;
-                let str = "";
-                for (let i = 0; i < val.byteLength; i++) {
-                    const b = val.getUint8(i);
-                    if (b >= 32 && b <= 126) str += String.fromCharCode(b);
-                }
-                onBoardSignal(str.trim());
-            });
-        } catch (err) {
-            log("⚠️ Erreur : " + err.message);
-        }
-    });
-
-    function onBoardSignal(code) {
-        document.getElementById('lastRawCode').textContent = `Signal reçu : "${code}"`;
-        if (code.startsWith("GB")) return;
-
-        if (activeMap[code] && activeMap[code].sector === -1) {
-            log("⏭️ Bouton cible pressé -> Joueur suivant");
-            nextTurn();
-            return;
-        }
-
-        if (boardLocked || manualLock) {
-            log(`🛡️ Impact ignoré (${code}) - retrait des flèches.`);
-            return;
-        }
-
-        if (activeMap[code]) {
-            const hit = activeMap[code];
-            registerHit(hit.label, hit.sector, hit.mult);
-        } else {
-            playDartHitSound();
-            pendingRawCode = code;
-            modalMode = 'learn';
-            document.getElementById('modalTitle').textContent = `🎯 Nouvelle case détectée (${code})`;
-            document.getElementById('modalSub').textContent = `Associez cette zone à sa valeur une seule fois :`;
-            document.getElementById('scoreModal').style.display = 'flex';
-        }
-    }
-
-    function initGame() {
-        mode = document.getElementById('gameMode').value;
-        players.forEach(p => {
-            p.score = mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0));
-            p.darts = [];
-            p.cricket = { 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0 };
-        });
-        currentPlayer = 0;
-        historyStack = [];
-        boardLocked = false;
-        manualLock = false;
-        updateLockUI();
-        renderUI();
-    }
-
-    async function registerHit(label, sector, mult) {
-        historyStack.push(JSON.parse(JSON.stringify({
-            players, currentPlayer, boardLocked, label
-        })));
-        const p = players[currentPlayer];
-        const pts = (sector === 25 && mult === 2) ? 50 : (sector * mult);
-
-        if (sector === 25) playTone('bull');
-        else if (mult === 3) playTone('triple');
-        else if (mult === 2) playTone('double');
-        else playTone('single');
-
-        if (mode === '501' || mode === '301') {
-            const newScore = p.score - pts;
-            p.darts.push(label);
-            if (newScore < 0) {
-                playTone('bust');
-                speak("Bust !");
-                const dartsCount = p.darts.length - 1;
-                if (dartsCount > 0 && historyStack.length >= dartsCount) {
-                    p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
-                }
-                boardLocked = true;
-            } else if (newScore === 0) {
-                p.score = 0;
-                speak(`Victoire de ${p.name} !`);
-                await handleWin(p);
-                alert(`🏆 VICTOIRE DE ${p.name} !`);
-            } else {
-                p.score = newScore;
-                if (pts >= 40) speak(`${pts}`);
-            }
-        } else if (mode === 'clock') {
-            p.darts.push(label);
-            if (sector === p.score) {
-                speak(`Touché !`);
-                p.score += 1;
-                if (p.score > 20) {
-                    speak(`Victoire !`);
-                    await handleWin(p);
-                    alert(`🏆 Gagné !`);
-                }
-            }
-        } else if (mode === 'cricket') {
-            p.darts.push(label);
-            if ([15,16,17,18,19,20,25].includes(sector)) {
-                for (let m = 0; m < mult; m++) {
-                    if (p.cricket[sector] < 3) {
-                        p.cricket[sector]++;
-                    } else {
-                        const openForOthers = players.some((other, idx) => idx !== currentPlayer && other.cricket[sector] < 3);
-                        if (openForOthers) {
-                            p.score += (sector === 25 ? 25 : sector);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (p.darts.length >= 3) {
-            boardLocked = true;
-            speak("Retirez vos flèches");
-        }
-
-        document.getElementById('lastHitText').textContent = `${label} (${pts} pts)`;
-        updateLockUI();
-        renderUI();
-    }
-
-    async function handleWin(winningPlayer) {
-        // Enregistre la victoire dans le profil permanent de l'équipe
-        players.forEach(async (p) => {
-            if (p.profileId && globalProfiles[p.profileId]) {
-                globalProfiles[p.profileId].gamesPlayed++;
-                if (p.profileId === winningPlayer.profileId) {
-                    globalProfiles[p.profileId].wins++;
-                }
-            }
-        });
-        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-        await syncCloud('upload');
-    }
-
-    function undoLast() {
-        if (historyStack.length === 0) return;
-        playTone('undo');
-        const prev = historyStack.pop();
-        players = prev.players;
-        currentPlayer = prev.currentPlayer;
-        boardLocked = prev.boardLocked;
-        document.getElementById('lastHitText').textContent = `Annulé (${prev.label})`;
-        updateLockUI();
-        renderUI();
-    }
-
-    function nextTurn() {
-        players[currentPlayer].darts = [];
-        currentPlayer = (currentPlayer + 1) % players.length;
-        players[currentPlayer].darts = [];
-        boardLocked = false;
-        manualLock = false;
-        speak(players[currentPlayer].name);
-        updateLockUI();
-        renderUI();
-    }
-
-    function toggleManualLock() {
-        manualLock = !manualLock;
-        updateLockUI();
-    }
-
-    function updateLockUI() {
-        const isLocked = boardLocked || manualLock;
-        document.getElementById('shieldBanner').style.display = isLocked ? 'block' : 'none';
-        const btn = document.getElementById('lockBtn');
-        btn.textContent = isLocked ? '🔒 Cible Verrouillée (ON)' : '🔓 Pause retrait : OFF';
-        btn.className = isLocked ? 'btn btn-orange' : 'btn btn-purple';
-    }
-
-    function openManualModal(type) {
-        modalMode = type;
-        document.getElementById('modalTitle').textContent = type === 'edit' ? '✏️ Corriger la dernière fléchette' : '➕ Ajouter une fléchette';
-        document.getElementById('scoreModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('scoreModal').style.display = 'none';
-    }
-
-    function confirmModalSelection(mult) {
-        const prefix = mult === 3 ? 'T' : (mult === 2 ? 'D' : 'S');
-        const label = `${prefix}${selectedNum}`;
-        applyModalChoice(label, selectedNum, mult);
-    }
-
-    function confirmSpecial(label, sector, mult) {
-        applyModalChoice(label, sector, mult);
-    }
-
-    function applyModalChoice(label, sector, mult) {
-        closeModal();
-        if (modalMode === 'learn' && pendingRawCode) {
-            localMap[pendingRawCode] = { label, sector, mult };
-            localStorage.setItem('granboard_map_v1', JSON.stringify(localMap));
-            activeMap = {...segmentMap, ...localMap};
-            log(`✅ Mémorisé : "${pendingRawCode}" = ${label}`);
-        } else if (modalMode === 'edit') {
-            const prev = historyStack.pop();
-            players = prev.players;
-            currentPlayer = prev.currentPlayer;
-            boardLocked = false;
-        }
-        registerHit(label, sector, mult);
-    }
-
-    function renderUI() {
-        const list = document.getElementById('playersList');
-        list.innerHTML = '';
-        players.forEach((p, idx) => {
-            const card = document.createElement('div');
-            card.className = 'p-card' + (idx === currentPlayer ? ' active' : '');
-            
-            const dartsHtml = p.darts.map(d => `<span class="dart-pill">${d}</span>`).join('');
-            const scoreLabel = mode === 'clock' ? `Cible : ${p.score}` : `${p.score} pts`;
-
-            // Récupère les stats si connectées à un profil
-            let statsText = "Statistiques indisponibles";
-            if (p.profileId && globalProfiles[p.profileId]) {
-                const prof = globalProfiles[p.profileId];
-                statsText = `Victoires : ${prof.wins} / Jouées : ${prof.gamesPlayed}`;
-            }
-
-            card.innerHTML = `
-                <div class="p-info" onclick="selectPlayer(${idx})">
-                    <div class="p-name ${idx === currentPlayer ? 'active-name' : ''}">
-                        👤 ${p.name} ${idx === currentPlayer ? '🎯' : ''}
-                    </div>
-                    <div class="p-stats-label">${statsText}</div>
-                    <div class="p-score">${scoreLabel}</div>
-                    <div class="p-darts">${dartsHtml || '<span style="color:#64748b;">En attente... (0/3)</span>'}</div>
-                </div>
-                <button class="btn-action-player" onclick="removePlayer(${idx})" style="color:var(--danger)">🗑️</button>
-            `;
-            list.appendChild(card);
-        });
-
-        const cBoard = document.getElementById('cricketBoard');
-        if (mode === 'cricket') {
-            cBoard.style.display = 'block';
-            let headHtml = '<div class="c-grid-header"><div>Joueur</div>';
-            [20,19,18,17,16,15,25].forEach(n => {
-                headHtml += `<div>${n === 25 ? 'BULL' : n}</div>`;
-            });
-            headHtml += '</div>';
-
-            let rowsHtml = '';
-            players.forEach(p => {
-                rowsHtml += `<div class="c-grid-row"><div class="c-grid-name">${p.name}</div>`;
-                [20,19,18,17,16,15,25].forEach(num => {
-                    const marks = formatCricketMarks(p.cricket[num] || 0);
-                    rowsHtml += `<div class="c-cell-num">${marks}</div>`;
-                });
-                rowsHtml += '</div>';
-            });
-            cBoard.innerHTML = headHtml + rowsHtml;
-        } else {
-            cBoard.style.display = 'none';
-        }
-    }
-
-    function selectPlayer(idx) {
-        currentPlayer = idx;
-        boardLocked = false;
-        updateLockUI();
-        renderUI();
-    }
-
-    function formatCricketMarks(count) {
-        if (count === 0) return '-';
-        if (count === 1) return '/';
-        if (count === 2) return 'X';
-        return '⊗';
-    }
-
-    // Init groupe display
-    if (groupCode) {
-        document.getElementById('groupCodeDisplay').textContent = `Code : ${groupCode}`;
-        syncCloud('download').then(() => renderUI());
-    }
-    initGame();
-</script>
-</body>
-</html>
+    let localMap = JSON.parse(localStorage.getItem('granboard_map_v1')) || {};
