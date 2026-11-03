@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GranBoard Pro - Ultimate</title>
+    <title>GranBoard Pro</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -39,7 +39,7 @@
         
         .btn {
             border: none; border-radius: 12px; padding: 12px; font-weight: 800;
-            font-size: 0.95rem; color: white; cursor: pointer; display: flex;
+            font-size: 0.92rem; color: white; cursor: pointer; display: flex;
             align-items: center; justify-content: center; gap: 6px;
         }
         .btn:active { transform: scale(0.97); }
@@ -70,52 +70,45 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
 
         .shield-banner {
             background: rgba(245, 158, 11, 0.15); border: 2px solid var(--accent);
             color: var(--accent); padding: 12px; border-radius: 14px; text-align: center;
-            font-weight: 800; display: none; animation: pulse 1.5s infinite;
+            font-weight: 800; display: none;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         
-        .players-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        .players-list { display: flex; flex-direction: column; gap: 8px; }
         .p-card {
             background: var(--card); border-radius: 14px; padding: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             border: 2px solid transparent;
         }
         .p-card.active { border-color: var(--accent); background: rgba(245,158,11,0.08); }
-        .p-info { display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; }
+        .p-info { display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; cursor: pointer; }
         .p-name { font-size: 1rem; font-weight: 800; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
         .p-name.active-name { color: white; }
-        .p-stats-label { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+        .p-stats-label { font-size: 0.72rem; color: #38bdf8; margin-top: 2px; }
         .p-score { font-size: 2.2rem; font-weight: 900; color: white; }
         .p-card.active .p-score { color: var(--accent); }
         .p-darts { display: flex; gap: 6px; font-size: 0.85rem; margin-top: 4px; }
         .dart-pill { background: #0f172a; padding: 2px 8px; border-radius: 6px; color: var(--accent); font-weight: bold; }
         
         .btn-action-player {
-            background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px;
+            background: rgba(239,68,68,0.15); border: 1px solid var(--danger);
+            color: var(--danger); border-radius: 10px; font-size: 1rem;
+            cursor: pointer; padding: 8px 12px; font-weight: bold;
         }
         
-        .cricket-board {
-            background: var(--card); border-radius: 14px; padding: 10px; display: none;
-        }
+        .cricket-board { background: var(--card); border-radius: 14px; padding: 10px; display: none; }
         .c-grid-header {
-            display: grid; grid-template-columns: repeat(9, 1fr);
+            display: grid; grid-template-columns: 1.5fr repeat(7, 1fr);
             text-align: center; font-weight: bold; font-size: 0.75rem; color: #94a3b8;
             padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         .c-grid-row {
-            display: grid; grid-template-columns: repeat(9, 1fr); align-items: center;
+            display: grid; grid-template-columns: 1.5fr repeat(7, 1fr); align-items: center;
             text-align: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-weight: bold;
         }
         .c-grid-name { text-align: left; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -126,118 +119,73 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .hit-big { font-size: 1.8rem; font-weight: 900; color: var(--accent); }
-        
         .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         
-        /* Modales */
         .modal-bg {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             display: none; align-items: center; justify-content: center; padding: 15px; z-index: 100;
         }
         .modal {
             background: var(--card); width: 100%; max-width: 440px; border-radius: 18px;
-            padding: 16px; border: 1px solid #475569;
-            max-height: 90vh; overflow-y: auto;
+            padding: 16px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto;
         }
         .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0; }
         .num-btn {
             background: #0f172a; color: white; border: 1px solid #334155;
-            padding: 12px 0; border-radius: 8px; font-weight: 800; font-size: 1rem;
+            padding: 12px 0; border-radius: 8px; font-weight: 800; font-size: 1rem; cursor: pointer;
         }
         .num-btn.sel { background: var(--accent); color: #000; border-color: var(--accent); }
         .mult-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
         .log-box {
             background: #020617; color: #38bdf8; font-family: monospace;
-            font-size: 0.72rem; padding: 10px; border-radius: 10px; height: 80px; overflow-y: auto;
+            font-size: 0.72rem; padding: 10px; border-radius: 10px; height: 85px; overflow-y: auto;
         }
 
         .stats-section {
-            margin-top: 15px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            padding: 12px;
+            margin-top: 12px; background: rgba(255,255,255,0.03);
+            border-radius: 12px; padding: 12px;
         }
-        .stats-title {
-            font-weight: 800;
-            font-size: 0.9rem;
-            color: var(--accent);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
+        .stats-title { font-weight: 800; font-size: 0.85rem; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
         .ranking-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.85rem;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;
         }
-        .bar-container {
-            width: 100%;
-            background: rgba(255,255,255,0.1);
-            height: 8px;
-            border-radius: 4px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-        .bar-fill {
-            background: var(--primary);
-            height: 100%;
-            border-radius: 4px;
-        }
-        .comparison-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            text-align: center;
-            margin-top: 10px;
-        }
-        .comparison-card {
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 10px;
-        }
-
+        .bar-container { width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-top: 4px; overflow: hidden; }
+        .bar-fill { background: var(--primary); height: 100%; border-radius: 4px; }
+        .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
+        .comparison-card { background: #0f172a; padding: 10px; border-radius: 10px; }
         .input-text-modern {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: white;
-            font-weight: bold;
-            font-size: 1rem;
-            margin: 10px 0;
+            width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155;
+            background: #0f172a; color: white; font-weight: bold; font-size: 1rem; margin: 8px 0;
         }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <!-- En-tête -->
     <div class="top-bar">
         <div style="font-weight:900; font-size:1.1rem;">🎯 GranBoard Pro</div>
         <div style="display:flex; gap:8px; align-items:center;">
-            <button class="btn btn-dark" style="padding:5px 10px; font-size:0.8rem;" onclick="toggleSound()" id="soundBtn">🔊 Son</button>
+            <button type="button" class="btn btn-dark" style="padding:5px 10px; font-size:0.8rem;" onclick="toggleSound()" id="soundBtn">🔊 Son</button>
             <div class="badge" id="bleBadge">Déconnecté</div>
         </div>
     </div>
 
-    <button class="btn btn-blue" id="btnConnect">🔌 CONNECTER LA GRAN BOARD</button>
+    <button type="button" class="btn btn-blue" id="btnConnect" onclick="connectGranBoard()">🔌 CONNECTER LA GRAN BOARD</button>
 
-    <!-- Gestionnaire de Profils -->
+    <!-- Barre Profils & Stats -->
     <div class="profile-bar">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:0.8rem; font-weight:800; color:var(--purple);">☁️ EQUIPE SYNCHRONISÉE</span>
-            <span id="groupCodeDisplay" style="font-size:0.8rem; font-weight:bold; color:white;">Code : aucun</span>
+            <span style="font-size:0.8rem; font-weight:800; color:var(--purple);">☁️ PROFILS & STATISTIQUES</span>
+            <span id="groupCodeDisplay" style="font-size:0.75rem; font-weight:bold; color:#cbd5e1;">Mode Local</span>
         </div>
-        <div style="display:flex; gap:4px;">
-            <button class="btn btn-purple" onclick="openGroupModal()" style="padding:8px; flex:1; font-size:0.7rem;">🔗 Config Équipe</button>
-            <button class="btn btn-dark" onclick="openNewProfileModal()" style="padding:8px; font-size:0.7rem;">👤 Nouveau Profil</button>
-            <button class="btn btn-orange" onclick="openStatsModal()" style="padding:8px; font-size:0.7rem; font-weight:bold;">📊 Stats & Duels</button>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+            <button type="button" class="btn btn-orange" onclick="openStatsModal()" style="padding:10px; font-size:0.8rem;">📊 Stats & Comparatifs</button>
+            <button type="button" class="btn btn-purple" onclick="openGroupModal()" style="padding:10px; font-size:0.8rem;">🔗 Code Équipe Cloud</button>
         </div>
     </div>
 
+    <!-- Choix du jeu et ajout de joueur -->
     <div class="setup-bar">
         <select id="gameMode" onchange="initGame()">
             <option value="501">Jeu : 501</option>
@@ -245,5 +193,827 @@
             <option value="cricket">Jeu : Cricket</option>
             <option value="clock">Tour du Monde</option>
         </select>
-        <button class="btn btn-blue" onclick="openChoosePlayerModal()" style="padding: 10px;">👥 Choisir Joueur</button>
-        <button class="btn btn-dark" onclick="initGame()">🔄 Res
+        <button type="button" class="btn btn-blue" onclick="openAddPlayerModal()" style="padding: 10px;">👤 + Joueur / Profil</button>
+        <button type="button" class="btn btn-dark" onclick="initGame()">🔄 Reset</button>
+    </div>
+
+    <div class="shield-banner" id="shieldBanner">
+        🛡️ CIBLE VERROUILLÉE (Retirez vos flèches sans risque !)<br>
+        <span style="font-size:0.8rem; font-weight:normal;">Appuyez sur "Joueur Suivant" une fois les flèches retirées.</span>
+    </div>
+
+    <div class="players-list" id="playersList"></div>
+    <div class="cricket-board" id="cricketBoard"></div>
+
+    <div class="last-hit-box">
+        <div>
+            <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">Dernière fléchette</div>
+            <div class="hit-big" id="lastHitText">--</div>
+            <div style="font-size:0.7rem; color:#64748b;" id="lastRawCode">Signal : aucun</div>
+        </div>
+        <button type="button" class="btn btn-dark" style="padding:10px 12px; font-size:0.8rem;" onclick="openManualModal('edit')">✏️ Corriger ce coup</button>
+    </div>
+
+    <div class="actions-grid">
+        <button type="button" class="btn btn-red" onclick="undoLast()">↩️ Annuler coup</button>
+        <button type="button" class="btn btn-green" onclick="nextTurn()">⏭️ Joueur suivant</button>
+        <button type="button" class="btn btn-orange" onclick="openManualModal('add')">➕ Impact manuel</button>
+        <button type="button" class="btn btn-purple" id="lockBtn" onclick="toggleManualLock()">🔓 Pause retrait : OFF</button>
+    </div>
+
+    <div class="log-box" id="logs">Initialisation...</div>
+</div>
+
+<!-- MODALE 1 : AJOUTER UN JOUEUR (CHOISIR PROFIL OU CRÉER PROFIL) -->
+<div class="modal-bg" id="addPlayerModal">
+    <div class="modal">
+        <h3 style="margin:0 0 8px 0; color:var(--accent); text-align:center;">👤 Qui rejoint la partie ?</h3>
+        
+        <div class="stats-section" style="margin-top:0;">
+            <div class="stats-title">1. Choisir un profil existant :</div>
+            <div id="existingProfilesList" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;"></div>
+        </div>
+
+        <div class="stats-section">
+            <div class="stats-title">2. Ou créer un nouveau profil :</div>
+            <input type="text" id="newProfileInput" class="input-text-modern" placeholder="Entrez votre prénom (ex: Ershad)">
+            <button type="button" class="btn btn-green" onclick="createAndAddProfile()" style="width:100%;">✨ Créer et rejoindre la partie</button>
+        </div>
+
+        <button type="button" class="btn btn-dark" onclick="closeAddPlayerModal()" style="width:100%; margin-top:12px;">Fermer</button>
+    </div>
+</div>
+
+<!-- MODALE 2 : STATISTIQUES & COMPARATIFS (+ OUVERTURE NOUVEL ONGLET) -->
+<div class="modal-bg" id="statsModal">
+    <div class="modal" style="max-width: 480px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; color:var(--accent);">📊 Statistiques & Duels</h3>
+            <button type="button" class="btn btn-blue" style="padding:6px 10px; font-size:0.75rem;" onclick="openStatsInNewTab()">↗️ Nouvel onglet</button>
+        </div>
+        
+        <div class="stats-section">
+            <div class="stats-title">🏆 Classement Général (Victoires & Moyenne)</div>
+            <div id="leaderboardContent">Aucun profil enregistré.</div>
+        </div>
+
+        <div class="stats-section">
+            <div class="stats-title">🥊 Comparateur Face-à-Face (Duel)</div>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <select id="duelP1" onchange="updateDuelCompare()" style="flex:1; padding:6px;"></select>
+                <div style="align-self:center; font-weight:bold; color:var(--accent);">VS</div>
+                <select id="duelP2" onchange="updateDuelCompare()" style="flex:1; padding:6px;"></select>
+            </div>
+            <div class="comparison-grid" id="duelGridContent"></div>
+        </div>
+
+        <button type="button" class="btn btn-dark" onclick="closeStatsModal()" style="width:100%; margin-top:15px;">Fermer</button>
+    </div>
+</div>
+
+<!-- MODALE 3 : CODE ÉQUIPE CLOUD -->
+<div class="modal-bg" id="groupModal">
+    <div class="modal">
+        <h3 style="margin:0 0 10px 0; color:var(--purple); text-align:center;">🔗 Synchronisation entre téléphones</h3>
+        <p style="font-size:0.82rem; color:#cbd5e1; text-align:center; margin:0 0 10px 0;">Entrez un code d'équipe commun pour retrouver vos profils sur un autre téléphone :</p>
+        <input type="text" id="groupCodeInput" class="input-text-modern" placeholder="Ex: fléchettes-2026">
+        <div style="display:flex; gap:8px; margin-top:8px;">
+            <button type="button" class="btn btn-green" onclick="saveGroupChoice()" style="flex:1;">Synchroniser</button>
+            <button type="button" class="btn btn-dark" onclick="closeGroupModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE 4 : CORRECTION / AJOUT DE SCORE -->
+<div class="modal-bg" id="scoreModal">
+    <div class="modal">
+        <h3 style="margin:0 0 6px 0; color:var(--accent);" id="modalTitle">🎯 Quelle case a été touchée ?</h3>
+        <div style="font-size:0.8rem; color:#cbd5e1; margin-bottom:10px;" id="modalSub">Sélectionnez le numéro puis Simple/Double/Triple :</div>
+        
+        <div class="num-grid" id="numGrid"></div>
+        <div class="mult-grid">
+            <button type="button" class="btn btn-blue" onclick="confirmModalSelection(1)">SIMPLE (x1)</button>
+            <button type="button" class="btn btn-green" onclick="confirmModalSelection(2)">DOUBLE (x2)</button>
+            <button type="button" class="btn btn-red" onclick="confirmModalSelection(3)">TRIPLE (x3)</button>
+        </div>
+        <div class="mult-grid">
+            <button type="button" class="btn btn-orange" onclick="confirmSpecial('SBULL', 25, 1)">BULL (25)</button>
+            <button type="button" class="btn btn-red" onclick="confirmSpecial('DBULL', 25, 2)">D-BULL (50)</button>
+            <button type="button" class="btn btn-dark" onclick="confirmSpecial('MISS', 0, 1)">RATÉ (0)</button>
+        </div>
+        <button type="button" class="btn btn-dark" onclick="closeModal()" style="width:100%; margin-top:8px;">Annuler</button>
+    </div>
+</div>
+
+<script>
+    const GRAN_SERVICE = '442f1570-8a00-9a28-cbe1-e1d4212d53eb';
+    const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
+    const CRICKET_NUMS = Array.of(20, 19, 18, 17, 16, 15, 25);
+
+    const segmentMap = {
+        "4.0@": { label: "BULL", sector: 25, mult: 1 },
+        "8.0@": { label: "D-BULL", sector: 25, mult: 2 },
+        "BTN@": { label: "BOUTON", sector: -1, mult: 1 },
+        "1.3@": { label: "S20", sector: 20, mult: 1 }, "11.3@": { label: "S20", sector: 20, mult: 1 }, "2.3@": { label: "D20", sector: 20, mult: 2 }, "3.3@": { label: "T20", sector: 20, mult: 3 },
+        "1.11@": { label: "S1", sector: 1, mult: 1 }, "11.11@": { label: "S1", sector: 1, mult: 1 }, "2.11@": { label: "D1", sector: 1, mult: 2 }, "3.11@": { label: "T1", sector: 1, mult: 3 },
+        "1.6@": { label: "S18", sector: 18, mult: 1 }, "11.6@": { label: "S18", sector: 18, mult: 1 }, "2.6@": { label: "D18", sector: 18, mult: 2 }, "3.6@": { label: "T18", sector: 18, mult: 3 },
+        "1.10@": { label: "S4", sector: 4, mult: 1 }, "11.10@": { label: "S4", sector: 4, mult: 1 }, "2.10@": { label: "D4", sector: 4, mult: 2 }, "3.10@": { label: "T4", sector: 4, mult: 3 },
+        "1.5@": { label: "S13", sector: 13, mult: 1 }, "11.5@": { label: "S13", sector: 13, mult: 1 }, "2.5@": { label: "D13", sector: 13, mult: 2 }, "3.5@": { label: "T13", sector: 13, mult: 3 },
+        "1.9@": { label: "S6", sector: 6, mult: 1 }, "11.9@": { label: "S6", sector: 6, mult: 1 }, "2.9@": { label: "D6", sector: 6, mult: 2 }, "3.9@": { label: "T6", sector: 6, mult: 3 },
+        "1.2@": { label: "S10", sector: 10, mult: 1 }, "11.2@": { label: "S10", sector: 10, mult: 1 }, "2.2@": { label: "D10", sector: 10, mult: 2 }, "3.2@": { label: "T10", sector: 10, mult: 3 },
+        "1.8@": { label: "S15", sector: 15, mult: 1 }, "11.8@": { label: "S15", sector: 15, mult: 1 }, "2.8@": { label: "D15", sector: 15, mult: 2 }, "3.8@": { label: "T15", sector: 15, mult: 3 },
+        "1.1@": { label: "S2", sector: 2, mult: 1 }, "11.1@": { label: "S2", sector: 2, mult: 1 }, "2.1@": { label: "D2", sector: 2, mult: 2 }, "3.1@": { label: "T2", sector: 2, mult: 3 },
+        "1.7@": { label: "S17", sector: 17, mult: 1 }, "11.7@": { label: "S17", sector: 17, mult: 1 }, "2.7@": { label: "D17", sector: 17, mult: 2 }, "3.7@": { label: "T17", sector: 17, mult: 3 },
+        "1.0@": { label: "S3", sector: 3, mult: 1 }, "11.0@": { label: "S3", sector: 3, mult: 1 }, "2.0@": { label: "D3", sector: 3, mult: 2 }, "3.0@": { label: "T3", sector: 3, mult: 3 },
+        "1.12@": { label: "S19", sector: 19, mult: 1 }, "11.12@": { label: "S19", sector: 19, mult: 1 }, "2.12@": { label: "D19", sector: 19, mult: 2 }, "3.12@": { label: "T19", sector: 19, mult: 3 },
+        "1.4@": { label: "S7", sector: 7, mult: 1 }, "11.4@": { label: "S16", sector: 16, mult: 1 }, "2.4@": { label: "D16", sector: 16, mult: 2 }, "3.4@": { label: "T16", sector: 16, mult: 3 }
+    };
+
+    let localMap = {};
+    try { localMap = JSON.parse(localStorage.getItem('granboard_map_v1')) || {}; } catch(e) {}
+    let activeMap = Object.assign({}, segmentMap, localMap);
+
+    let soundEnabled = true;
+    let boardLocked = false;
+    let manualLock = false;
+    let mode = '501';
+    
+    let groupCode = localStorage.getItem('granboard_group_code') || '';
+    let globalProfiles = {};
+    try { globalProfiles = JSON.parse(localStorage.getItem('granboard_profiles')) || {}; } catch(e) {}
+
+    let players = Array.of(
+        { name: "JOUEUR 1", score: 501, darts: Array.of(), cricket: {}, profileId: null, stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 } },
+        { name: "JOUEUR 2", score: 501, darts: Array.of(), cricket: {}, profileId: null, stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 } }
+    );
+    let currentPlayer = 0;
+    let historyStack = Array.of();
+    let modalMode = 'add';
+    let pendingRawCode = null;
+    let selectedNum = 20;
+
+    function log(msg) {
+        const box = document.getElementById('logs');
+        box.innerHTML += '<br>> ' + msg;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // Création de la grille 1-20
+    const numGrid = document.getElementById('numGrid');
+    for (let i = 1; i <= 20; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'num-btn' + (i === 20 ? ' sel' : '');
+        b.textContent = i;
+        b.onclick = function() { selectNumber(i); };
+        b.id = 'numBtn_' + i;
+        numGrid.appendChild(b);
+    }
+
+    function selectNumber(n) {
+        selectedNum = n;
+        for (let i = 1; i <= 20; i++) {
+            document.getElementById('numBtn_' + i).classList.toggle('sel', i === n);
+        }
+    }
+
+    // --- SON D'IMPACT DE FLÉCHETTE PLANTÉE + SYSTÈME AUDIO ---
+    function playDartHitSound() {
+        if (!soundEnabled) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = ctx.currentTime;
+            // Claquement sec de la flèche qui se plante dans le segment
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'triangle';
+            osc1.frequency.setValueAtTime(1600, now);
+            osc1.frequency.exponentialRampToValueAtTime(110, now + 0.035);
+            gain1.gain.setValueAtTime(0.6, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.035);
+            
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(320, now + 0.015);
+            osc2.frequency.exponentialRampToValueAtTime(65, now + 0.08);
+            gain2.gain.setValueAtTime(0.4, now + 0.015);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+            osc1.connect(gain1); gain1.connect(ctx.destination);
+            osc2.connect(gain2); gain2.connect(ctx.destination);
+            osc1.start(now); osc1.stop(now + 0.04);
+            osc2.start(now + 0.015); osc2.stop(now + 0.085);
+        } catch(e) {}
+    }
+
+    function playTone(type) {
+        if (!soundEnabled) return;
+        playDartHitSound();
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            const now = ctx.currentTime;
+
+            if (type === 'single') {
+                osc.frequency.setValueAtTime(520, now + 0.06);
+                gain.gain.setValueAtTime(0.2, now + 0.06);
+                osc.start(now + 0.06); osc.stop(now + 0.14);
+            } else if (type === 'double') {
+                osc.frequency.setValueAtTime(587, now + 0.06);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+                gain.gain.setValueAtTime(0.25, now + 0.06);
+                osc.start(now + 0.06); osc.stop(now + 0.24);
+            } else if (type === 'triple' || type === 'bull') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523, now + 0.06);
+                osc.frequency.setValueAtTime(659, now + 0.14);
+                osc.frequency.setValueAtTime(1046, now + 0.22);
+                gain.gain.setValueAtTime(0.3, now + 0.06);
+                osc.start(now + 0.06); osc.stop(now + 0.36);
+            } else if (type === 'undo' || type === 'bust') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(280, now);
+                osc.frequency.linearRampToValueAtTime(120, now + 0.25);
+                gain.gain.setValueAtTime(0.3, now);
+                osc.start(now); osc.stop(now + 0.25);
+            }
+        } catch(e) {}
+    }
+
+    function speak(text) {
+        if (!soundEnabled || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        setTimeout(function() {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'fr-FR';
+            u.rate = 1.05;
+            window.speechSynthesis.speak(u);
+        }, 100);
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Son' : '🔇 Muet';
+    }
+
+    // --- GESTION DES PROFILS ET AJOUT DE JOUEUR ---
+    function openAddPlayerModal() {
+        renderExistingProfilesList();
+        document.getElementById('newProfileInput').value = '';
+        document.getElementById('addPlayerModal').style.display = 'flex';
+    }
+    function closeAddPlayerModal() {
+        document.getElementById('addPlayerModal').style.display = 'none';
+    }
+
+    function renderExistingProfilesList() {
+        const container = document.getElementById('existingProfilesList');
+        container.innerHTML = '';
+        const ids = Object.keys(globalProfiles);
+        if (ids.length === 0) {
+            container.innerHTML = '<div style="font-size:0.8rem; color:#94a3b8; text-align:center; padding:8px;">Aucun profil enregistré pour le moment. Créez le premier ci-dessous !</div>';
+            return;
+        }
+        ids.forEach(function(id) {
+            const prof = globalProfiles[id];
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '6px';
+            row.innerHTML = '<button type="button" class="btn btn-blue" style="flex:1; justify-content:space-between; padding:10px;" onclick="selectExistingProfile(\'' + id + '\')">' +
+                '<span>👤 ' + prof.name + '</span>' +
+                '<span style="font-size:0.75rem; opacity:0.85;">🏆 ' + prof.wins + ' vict.</span>' +
+                '</button>';
+            container.appendChild(row);
+        });
+    }
+
+    function selectExistingProfile(id) {
+        const prof = globalProfiles[id];
+        if (!prof) return;
+        addActivePlayer(prof.name, id);
+        closeAddPlayerModal();
+    }
+
+    async function createAndAddProfile() {
+        const input = document.getElementById('newProfileInput');
+        const name = input.value.trim().toUpperCase();
+        if (!name) {
+            alert("Veuillez entrer un prénom ou pseudo !");
+            return;
+        }
+        const id = 'p_' + Date.now();
+        globalProfiles[id] = {
+            name: name,
+            gamesPlayed: 0,
+            wins: 0,
+            totalPoints: 0,
+            totalDarts: 0,
+            triples: 0,
+            bulls: 0,
+            best501Darts: 999
+        };
+        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+        log('👤 Nouveau profil créé : ' + name);
+        addActivePlayer(name, id);
+        closeAddPlayerModal();
+        await syncCloud('upload');
+    }
+
+    function addActivePlayer(name, profileId) {
+        const startScore = mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0));
+        players.push({
+            name: name,
+            score: startScore,
+            darts: Array.of(),
+            cricket: {},
+            profileId: profileId || null,
+            stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 }
+        });
+        renderUI();
+    }
+
+    function removePlayer(idx) {
+        if (players.length <= 1) {
+            alert("Il doit rester au moins 1 joueur dans la partie !");
+            return;
+        }
+        const removed = players.splice(idx, 1);
+        log('🗑️ Joueur retiré : ' + removed.at(0).name);
+        if (currentPlayer >= players.length) currentPlayer = 0;
+        renderUI();
+    }
+
+    // --- SYNCHRONISATION CLOUD ENTRE TÉLÉPHONES ---
+    async function syncCloud(direction) {
+        if (!groupCode) return;
+        const url = 'https://kvdb.io/A6T9k2mN8pQr4sW1vX3yZa/' + encodeURIComponent(groupCode);
+        try {
+            if (direction === 'upload') {
+                await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify(globalProfiles)
+                });
+            } else if (direction === 'download') {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && typeof data === 'object') {
+                        globalProfiles = Object.assign({}, globalProfiles, data);
+                        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+                        log('☁️ Profils synchronisés !');
+                    }
+                }
+            }
+        } catch (e) {
+            log('Info : Profils sauvegardés sur ce téléphone.');
+        }
+    }
+
+    function openGroupModal() {
+        document.getElementById('groupCodeInput').value = groupCode;
+        document.getElementById('groupModal').style.display = 'flex';
+    }
+    function closeGroupModal() {
+        document.getElementById('groupModal').style.display = 'none';
+    }
+    async function saveGroupChoice() {
+        const code = document.getElementById('groupCodeInput').value.trim().toLowerCase();
+        if (code !== "") {
+            groupCode = code;
+            localStorage.setItem('granboard_group_code', groupCode);
+            document.getElementById('groupCodeDisplay').textContent = 'Équipe : ' + groupCode;
+            closeGroupModal();
+            await syncCloud('download');
+            renderUI();
+        }
+    }
+
+    // --- CONNEXION BLUETOOTH GRAN BOARD 3S ---
+    async function connectGranBoard() {
+        if (!navigator.bluetooth) {
+            alert("Bluetooth non détecté : utilisez Google Chrome sur Android (et en mode Debug si vous êtes sur CodePen) !");
+            return;
+        }
+        try {
+            log("Recherche Bluetooth de la Gran Board...");
+            const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: Array.of(GRAN_SERVICE)
+            });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(GRAN_SERVICE);
+            const char = await service.getCharacteristic(GRAN_NOTIFY);
+            await char.startNotifications();
+
+            const badge = document.getElementById('bleBadge');
+            badge.textContent = "Connecté";
+            badge.classList.add('ok');
+            document.getElementById('btnConnect').style.display = 'none';
+            log("✅ Gran Board 3s connectée !");
+            playTone('bull');
+            speak("Cible connectée");
+
+            char.addEventListener('characteristicvaluechanged', function(event) {
+                const val = event.target.value;
+                let str = "";
+                for (let i = 0; i < val.byteLength; i++) {
+                    const b = val.getUint8(i);
+                    if (b >= 32 && b <= 126) str += String.fromCharCode(b);
+                }
+                onBoardSignal(str.trim());
+            });
+        } catch (err) {
+            log("⚠️ Erreur Bluetooth : " + err.message);
+        }
+    }
+
+    function onBoardSignal(code) {
+        document.getElementById('lastRawCode').textContent = 'Signal reçu : "' + code + '"';
+        if (code.startsWith("GB")) return;
+
+        if (activeMap[code] && activeMap[code].sector === -1) {
+            nextTurn();
+            return;
+        }
+
+        if (boardLocked || manualLock) {
+            log('🛡️ Impact ignoré (' + code + ') - cible en pause retrait.');
+            return;
+        }
+
+        if (activeMap[code]) {
+            const hit = activeMap[code];
+            registerHit(hit.label, hit.sector, hit.mult);
+        } else {
+            playDartHitSound();
+            pendingRawCode = code;
+            modalMode = 'learn';
+            document.getElementById('modalTitle').textContent = '🎯 Nouvelle case (' + code + ')';
+            document.getElementById('modalSub').textContent = 'Indiquez une fois quelle case a été touchée :';
+            document.getElementById('scoreModal').style.display = 'flex';
+        }
+    }
+
+    function initGame() {
+        mode = document.getElementById('gameMode').value;
+        players.forEach(function(p) {
+            p.score = mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0));
+            p.darts = Array.of();
+            p.cricket = {};
+            p.stats = { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 };
+        });
+        currentPlayer = 0;
+        historyStack = Array.of();
+        boardLocked = false;
+        manualLock = false;
+        updateLockUI();
+        renderUI();
+    }
+
+    async function registerHit(label, sector, mult) {
+        historyStack.push(JSON.parse(JSON.stringify({
+            players: players, currentPlayer: currentPlayer, boardLocked: boardLocked, label: label
+        })));
+        const p = players[currentPlayer];
+        const pts = (sector === 25 && mult === 2) ? 50 : (sector * mult);
+
+        if (sector === 25) playTone('bull');
+        else if (mult === 3) playTone('triple');
+        else if (mult === 2) playTone('double');
+        else playTone('single');
+
+        if (sector > 0) {
+            p.stats.totalPoints += pts;
+            p.stats.totalDarts += 1;
+            if (mult === 3) p.stats.triples += 1;
+            if (sector === 25) p.stats.bulls += 1;
+        }
+
+        if (mode === '501' || mode === '301') {
+            const newScore = p.score - pts;
+            p.darts.push(label);
+            if (newScore < 0) {
+                playTone('bust');
+                speak("Bust !");
+                const dartsCount = p.darts.length - 1;
+                if (dartsCount > 0 && historyStack.length >= dartsCount) {
+                    p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
+                }
+                boardLocked = true;
+            } else if (newScore === 0) {
+                p.score = 0;
+                speak('Victoire de ' + p.name + ' !');
+                await handleWin(p);
+                alert('🏆 VICTOIRE DE ' + p.name + ' !');
+            } else {
+                p.score = newScore;
+                if (pts >= 40) speak('' + pts);
+            }
+        } else if (mode === 'clock') {
+            p.darts.push(label);
+            if (sector === p.score) {
+                speak("Touché !");
+                p.score += 1;
+                if (p.score > 20) {
+                    speak("Victoire !");
+                    await handleWin(p);
+                    alert("🏆 Gagné !");
+                }
+            }
+        } else if (mode === 'cricket') {
+            p.darts.push(label);
+            if (CRICKET_NUMS.includes(sector)) {
+                const currentMarks = p.cricket[sector] || 0;
+                for (let m = 0; m < mult; m++) {
+                    if ((p.cricket[sector] || 0) < 3) {
+                        p.cricket[sector] = (p.cricket[sector] || 0) + 1;
+                    } else {
+                        const openForOthers = players.some(function(other, idx) {
+                            return idx !== currentPlayer && (other.cricket[sector] || 0) < 3;
+                        });
+                        if (openForOthers) {
+                            p.score += (sector === 25 ? 25 : sector);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (p.darts.length >= 3) {
+            boardLocked = true;
+            speak("Retirez vos flèches");
+        }
+
+        document.getElementById('lastHitText').textContent = label + ' (' + pts + ' pts)';
+        updateLockUI();
+        renderUI();
+    }
+
+    async function handleWin(winningPlayer) {
+        players.forEach(function(p) {
+            if (p.profileId && globalProfiles[p.profileId]) {
+                const prof = globalProfiles[p.profileId];
+                prof.gamesPlayed = (prof.gamesPlayed || 0) + 1;
+                prof.totalPoints = (prof.totalPoints || 0) + p.stats.totalPoints;
+                prof.totalDarts = (prof.totalDarts || 0) + p.stats.totalDarts;
+                prof.triples = (prof.triples || 0) + (p.stats.triples || 0);
+                prof.bulls = (prof.bulls || 0) + (p.stats.bulls || 0);
+                
+                if (p.profileId === winningPlayer.profileId) {
+                    prof.wins = (prof.wins || 0) + 1;
+                    if (mode === '501' && p.stats.totalDarts > 0 && p.stats.totalDarts < (prof.best501Darts || 999)) {
+                        prof.best501Darts = p.stats.totalDarts;
+                    }
+                }
+            }
+        });
+        localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+        await syncCloud('upload');
+    }
+
+    function undoLast() {
+        if (historyStack.length === 0) return;
+        playTone('undo');
+        const prev = historyStack.pop();
+        players = prev.players;
+        currentPlayer = prev.currentPlayer;
+        boardLocked = prev.boardLocked;
+        document.getElementById('lastHitText').textContent = 'Annulé (' + prev.label + ')';
+        updateLockUI();
+        renderUI();
+    }
+
+    function nextTurn() {
+        players[currentPlayer].darts = Array.of();
+        currentPlayer = (currentPlayer + 1) % players.length;
+        players[currentPlayer].darts = Array.of();
+        boardLocked = false;
+        manualLock = false;
+        speak(players[currentPlayer].name);
+        updateLockUI();
+        renderUI();
+    }
+
+    function toggleManualLock() {
+        manualLock = !manualLock;
+        updateLockUI();
+    }
+
+    function updateLockUI() {
+        const isLocked = boardLocked || manualLock;
+        document.getElementById('shieldBanner').style.display = isLocked ? 'block' : 'none';
+        const btn = document.getElementById('lockBtn');
+        btn.textContent = isLocked ? '🔒 Cible Verrouillée (ON)' : '🔓 Pause retrait : OFF';
+        btn.className = isLocked ? 'btn btn-orange' : 'btn btn-purple';
+    }
+
+    // --- STATISTIQUES & COMPARATIFS (+ OUVERTURE NOUVEL ONGLET) ---
+    function openStatsModal() {
+        document.getElementById('statsModal').style.display = 'flex';
+        const leaderboard = document.getElementById('leaderboardContent');
+        const ids = Object.keys(globalProfiles);
+        
+        if (ids.length === 0) {
+            leaderboard.innerHTML = "Aucun profil créé. Cliquez sur '+ Joueur / Profil' pour en créer un !";
+        } else {
+            const sorted = ids.map(function(id) { return Object.assign({id: id}, globalProfiles[id]); })
+                .sort(function(a, b) {
+                    const rateA = a.gamesPlayed > 0 ? (a.wins / a.gamesPlayed) : 0;
+                    const rateB = b.gamesPlayed > 0 ? (b.wins / b.gamesPlayed) : 0;
+                    return rateB - rateA;
+                });
+
+            let html = '';
+            sorted.forEach(function(p, i) {
+                const rate = p.gamesPlayed > 0 ? Math.round((p.wins / p.gamesPlayed) * 100) : 0;
+                const avg3 = p.totalDarts > 0 ? ((p.totalPoints / p.totalDarts) * 3).toFixed(1) : '0.0';
+                html += '<div class="ranking-row">' +
+                        '<div><strong>#' + (i + 1) + ' ' + p.name + '</strong><br><span style="font-size:0.72rem; color:#94a3b8;">Triples: ' + (p.triples || 0) + ' | Bulls: ' + (p.bulls || 0) + '</span></div>' +
+                        '<div style="text-align:right;">' +
+                            '<strong>' + rate + '% Victoires</strong> (' + p.wins + '/' + p.gamesPlayed + ')' +
+                            '<div style="font-size:0.72rem; color:#38bdf8;">Moy. 3 flèches : ' + avg3 + ' pts</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="bar-container"><div class="bar-fill" style="width: ' + rate + '%;"></div></div>';
+            });
+            leaderboard.innerHTML = html;
+        }
+
+        const d1 = document.getElementById('duelP1');
+        const d2 = document.getElementById('duelP2');
+        d1.innerHTML = '';
+        d2.innerHTML = '';
+        
+        ids.forEach(function(id) {
+            const opt1 = document.createElement('option');
+            opt1.value = id; opt1.textContent = globalProfiles[id].name;
+            const opt2 = opt1.cloneNode(true);
+            d1.appendChild(opt1);
+            d2.appendChild(opt2);
+        });
+        if (ids.length >= 2) d2.selectedIndex = 1;
+        updateDuelCompare();
+    }
+
+    function updateDuelCompare() {
+        const id1 = document.getElementById('duelP1').value;
+        const id2 = document.getElementById('duelP2').value;
+        const content = document.getElementById('duelGridContent');
+
+        if (!id1 || !id2 || id1 === id2) {
+            content.innerHTML = '<div style="grid-column: span 2; font-size:0.8rem; color:#94a3b8; padding:10px;">Créez au moins 2 profils et sélectionnez-les pour afficher le duel comparatif.</div>';
+            return;
+        }
+
+        const p1 = globalProfiles[id1];
+        const p2 = globalProfiles[id2];
+        const rate1 = p1.gamesPlayed > 0 ? Math.round((p1.wins / p1.gamesPlayed) * 100) : 0;
+        const rate2 = p2.gamesPlayed > 0 ? Math.round((p2.wins / p2.gamesPlayed) * 100) : 0;
+        const avg1 = p1.totalDarts > 0 ? ((p1.totalPoints / p1.totalDarts) * 3).toFixed(1) : '0.0';
+        const avg2 = p2.totalDarts > 0 ? ((p2.totalPoints / p2.totalDarts) * 3).toFixed(1) : '0.0';
+
+        content.innerHTML = '<div class="comparison-card">' +
+                '<div style="font-weight:bold; color:var(--accent);">' + p1.name + '</div>' +
+                '<div style="font-size:1.2rem; font-weight:800; margin:4px 0;">' + rate1 + '%</div>' +
+                '<div style="font-size:0.7rem; color:#94a3b8;">Taux Victoire</div>' +
+                '<div style="font-size:0.95rem; font-weight:700; margin-top:6px; color:#38bdf8;">' + avg1 + ' pts</div>' +
+                '<div style="font-size:0.7rem; color:#94a3b8;">Moy. par volée (3 fl.)</div>' +
+                '<div style="font-size:0.8rem; margin-top:6px;">🎯 Triples: ' + (p1.triples || 0) + ' | Bulls: ' + (p1.bulls || 0) + '</div>' +
+            '</div>' +
+            '<div class="comparison-card">' +
+                '<div style="font-weight:bold; color:var(--primary);">' + p2.name + '</div>' +
+                '<div style="font-size:1.2rem; font-weight:800; margin:4px 0;">' + rate2 + '%</div>' +
+                '<div style="font-size:0.7rem; color:#94a3b8;">Taux Victoire</div>' +
+                '<div style="font-size:0.95rem; font-weight:700; margin-top:6px; color:#38bdf8;">' + avg2 + ' pts</div>' +
+                '<div style="font-size:0.7rem; color:#94a3b8;">Moy. par volée (3 fl.)</div>' +
+                '<div style="font-size:0.8rem; margin-top:6px;">🎯 Triples: ' + (p2.triples || 0) + ' | Bulls: ' + (p2.bulls || 0) + '</div>' +
+            '</div>';
+    }
+
+    function openStatsInNewTab() {
+        const w = window.open('', '_blank');
+        if (!w) {
+            alert("Autorisez les pop-ups pour ouvrir le tableau dans un nouvel onglet.");
+            return;
+        }
+        const htmlContent = document.getElementById('statsModal').innerHTML;
+        w.document.write('<html><head><title>Stats GranBoard</title><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{background:#0f172a;color:#fff;font-family:sans-serif;padding:20px;} .stats-section{background:#1e293b;padding:15px;border-radius:12px;margin-bottom:15px;} .stats-title{color:#f59e0b;font-weight:bold;margin-bottom:10px;} .ranking-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;} .bar-container{background:#334155;height:8px;border-radius:4px;margin-top:4px;} .bar-fill{background:#10b981;height:100%;border-radius:4px;} .comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center;} .comparison-card{background:#0f172a;padding:12px;border-radius:10px;} button,select{display:none;}</style></head><body>' + htmlContent + '</body></html>');
+        w.document.close();
+    }
+
+    function closeStatsModal() {
+        document.getElementById('statsModal').style.display = 'none';
+    }
+
+    function openManualModal(type) {
+        modalMode = type;
+        document.getElementById('modalTitle').textContent = type === 'edit' ? '✏️ Corriger la dernière fléchette' : '➕ Ajouter une fléchette';
+        document.getElementById('scoreModal').style.display = 'flex';
+    }
+    function closeModal() {
+        document.getElementById('scoreModal').style.display = 'none';
+    }
+
+    function confirmModalSelection(mult) {
+        const prefix = mult === 3 ? 'T' : (mult === 2 ? 'D' : 'S');
+        const label = prefix + selectedNum;
+        applyModalChoice(label, selectedNum, mult);
+    }
+    function confirmSpecial(label, sector, mult) {
+        applyModalChoice(label, sector, mult);
+    }
+
+    function applyModalChoice(label, sector, mult) {
+        closeModal();
+        if (modalMode === 'learn' && pendingRawCode) {
+            localMap[pendingRawCode] = { label: label, sector: sector, mult: mult };
+            localStorage.setItem('granboard_map_v1', JSON.stringify(localMap));
+            activeMap = Object.assign({}, segmentMap, localMap);
+            log('✅ Case mémorisée : "' + pendingRawCode + '" = ' + label);
+        } else if (modalMode === 'edit' && historyStack.length > 0) {
+            const prev = historyStack.pop();
+            players = prev.players;
+            currentPlayer = prev.currentPlayer;
+            boardLocked = false;
+        }
+        registerHit(label, sector, mult);
+    }
+
+    function renderUI() {
+        const list = document.getElementById('playersList');
+        list.innerHTML = '';
+        players.forEach(function(p, idx) {
+            const card = document.createElement('div');
+            card.className = 'p-card' + (idx === currentPlayer ? ' active' : '');
+            
+            const dartsHtml = p.darts.map(function(d) { return '<span class="dart-pill">' + d + '</span>'; }).join('');
+            const scoreLabel = mode === 'clock' ? 'Cible : ' + p.score : p.score + ' pts';
+
+            let statsText = "Joueur invité (non sauvegardé)";
+            if (p.profileId && globalProfiles[p.profileId]) {
+                const prof = globalProfiles[p.profileId];
+                const avg3 = prof.totalDarts > 0 ? ((prof.totalPoints / prof.totalDarts) * 3).toFixed(1) : '0.0';
+                statsText = '🏆 ' + prof.wins + '/' + prof.gamesPlayed + ' vict. | Moy. 3 fl. : ' + avg3 + ' pts';
+            }
+
+            card.innerHTML = '<div class="p-info" onclick="selectPlayer(' + idx + ')">' +
+                    '<div class="p-name ' + (idx === currentPlayer ? 'active-name' : '') + '">' +
+                        '👤 ' + p.name + ' ' + (idx === currentPlayer ? '🎯' : '') +
+                    '</div>' +
+                    '<div class="p-stats-label">' + statsText + '</div>' +
+                    '<div class="p-score">' + scoreLabel + '</div>' +
+                    '<div class="p-darts">' + (dartsHtml || '<span style="color:#64748b;">Prêt à lancer (0/3)</span>') + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn-action-player" onclick="removePlayer(' + idx + ')" title="Retirer ce joueur">🗑️</button>';
+            list.appendChild(card);
+        });
+
+        const cBoard = document.getElementById('cricketBoard');
+        if (mode === 'cricket') {
+            cBoard.style.display = 'block';
+            let headHtml = '<div class="c-grid-header"><div>Joueur</div>';
+            CRICKET_NUMS.forEach(function(n) { headHtml += '<div>' + (n === 25 ? 'BULL' : n) + '</div>'; });
+            headHtml += '</div>';
+
+            let rowsHtml = '';
+            players.forEach(function(p) {
+                rowsHtml += '<div class="c-grid-row"><div class="c-grid-name">' + p.name + '</div>';
+                CRICKET_NUMS.forEach(function(num) {
+                    const marks = formatCricketMarks(p.cricket[num] || 0);
+                    rowsHtml += '<div class="c-cell-num">' + marks + '</div>';
+                });
+                rowsHtml += '</div>';
+            });
+            cBoard.innerHTML = headHtml + rowsHtml;
+        } else {
+            cBoard.style.display = 'none';
+        }
+    }
+
+    function selectPlayer(idx) {
+        currentPlayer = idx;
+        boardLocked = false;
+        updateLockUI();
+        renderUI();
+    }
+
+    function formatCricketMarks(count) {
+        if (count === 0) return '-';
+        if (count === 1) return '/';
+        if (count === 2) return 'X';
+        return '⊗';
+    }
+
+    if (groupCode) {
+        document.getElementById('groupCodeDisplay').textContent = 'Équipe : ' + groupCode;
+        syncCloud('download').then(function() { renderUI(); });
+    }
+    initGame();
+    log("✅ Application prête et boutons actifs !");
+</script>
+</body>
+</html>
