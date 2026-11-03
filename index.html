@@ -198,6 +198,19 @@
             padding: 10px;
             border-radius: 10px;
         }
+
+        /* Saisie tactile moderne de texte */
+        .input-text-modern {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -222,8 +235,8 @@
             <span id="groupCodeDisplay" style="font-size:0.8rem; font-weight:bold; color:white;">Code : aucun</span>
         </div>
         <div style="display:flex; gap:4px;">
-            <button class="btn btn-purple" onclick="createOrJoinGroup()" style="padding:8px; flex:1; font-size:0.7rem;">🔗 Config Équipe</button>
-            <button class="btn btn-dark" onclick="addCloudPlayerPrompt()" style="padding:8px; font-size:0.7rem;">👤 Nouveau Profil</button>
+            <button class="btn btn-purple" onclick="openGroupModal()" style="padding:8px; flex:1; font-size:0.7rem;">🔗 Config Équipe</button>
+            <button class="btn btn-dark" onclick="openNewProfileModal()" style="padding:8px; font-size:0.7rem;">👤 Nouveau Profil</button>
             <button class="btn btn-orange" onclick="openStatsModal()" style="padding:8px; font-size:0.7rem; font-weight:bold;">📊 Stats & Duels</button>
         </div>
     </div>
@@ -236,7 +249,7 @@
             <option value="cricket">Jeu : Cricket</option>
             <option value="clock">Tour du Monde</option>
         </select>
-        <button class="btn btn-blue" onclick="addActivePlayerFromProfiles()" style="padding: 10px;">👥 Choisir Joueur</button>
+        <button class="btn btn-blue" onclick="openChoosePlayerModal()" style="padding: 10px;">👥 Choisir Joueur</button>
         <button class="btn btn-dark" onclick="initGame()">🔄 Reset</button>
     </div>
 
@@ -297,13 +310,11 @@
     <div class="modal" style="max-width: 480px;">
         <h3 style="margin:0 0 10px 0; color:var(--accent); text-align:center;">📊 Statistiques & Duels d'Équipe</h3>
         
-        <!-- Hall of Fame / Classement -->
         <div class="stats-section">
             <div class="stats-title">🏆 Classement des Joueurs (% de Victoires)</div>
             <div id="leaderboardContent">Aucun profil enregistré.</div>
         </div>
 
-        <!-- Outil de Duel / Comparateur Face-à-Face -->
         <div class="stats-section">
             <div class="stats-title">🥊 Comparateur Face-à-Face</div>
             <div style="display:flex; gap:6px; margin-bottom:10px;">
@@ -311,14 +322,48 @@
                 <div style="align-self:center; font-weight:bold; color:var(--accent);">VS</div>
                 <select id="duelP2" onchange="updateDuelCompare()" style="flex:1; padding:6px;"></select>
             </div>
-            <div class="comparison-grid" id="duelGridContent">
-                <!-- Rempli dynamiquement -->
-            </div>
+            <div class="comparison-grid" id="duelGridContent"></div>
         </div>
 
-        <!-- Boutons d'action bas de fenêtre -->
         <div style="display:flex; gap:8px; margin-top:15px;">
             <button class="btn btn-dark" onclick="closeStatsModal()" style="flex:1;">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Fenêtre Modale : Configuration d'Équipe (Saisie) -->
+<div class="modal-bg" id="groupModal">
+    <div class="modal">
+        <h3 style="margin:0 0 10px 0; color:var(--purple); text-align:center;">🔗 Rejoindre ou Créer une Équipe</h3>
+        <p style="font-size:0.85rem; color:#cbd5e1; text-align:center; margin:0 0 15px 0;">Saisissez un nom d'équipe pour synchroniser vos profils sur tous les téléphones (ex : bsh-equipe-1) :</p>
+        <input type="text" id="groupCodeInput" class="input-text-modern" placeholder="Nom de l'équipe">
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-green" onclick="saveGroupChoice()" style="flex:1;">Valider</button>
+            <button class="btn btn-dark" onclick="closeGroupModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Fenêtre Modale : Création de Profil (Saisie) -->
+<div class="modal-bg" id="newProfileModal">
+    <div class="modal">
+        <h3 style="margin:0 0 10px 0; color:var(--accent); text-align:center;">👤 Nouveau Profil Permanent</h3>
+        <p style="font-size:0.85rem; color:#cbd5e1; text-align:center; margin:0 0 15px 0;">Créez un profil permanent pour enregistrer vos statistiques de jeu à vie :</p>
+        <input type="text" id="newProfileInput" class="input-text-modern" placeholder="Prénom ou Pseudo">
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-green" onclick="saveNewProfileChoice()" style="flex:1;">Créer le profil</button>
+            <button class="btn btn-dark" onclick="closeNewProfileModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Fenêtre Modale : Choisir un Joueur -->
+<div class="modal-bg" id="choosePlayerModal">
+    <div class="modal">
+        <h3 style="margin:0 0 10px 0; color:var(--blue); text-align:center;">👥 Choisir un joueur de l'Équipe</h3>
+        <div id="choosePlayerListContent" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px; max-height:200px; overflow-y:auto;"></div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-dark" onclick="closeChoosePlayerModal()" style="flex:1;">Fermer</button>
         </div>
     </div>
 </div>
@@ -327,7 +372,6 @@
     const GRAN_SERVICE = '442f1570-8a00-9a28-cbe1-e1d4212d53eb';
     const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
 
-    // Base de données des segments GranBoard 3s
     const segmentMap = {
         "4.0@": { label: "BULL", sector: 25, mult: 1 },
         "8.0@": { label: "D-BULL", sector: 25, mult: 2 },
@@ -355,3 +399,20 @@
     };
 
     let localMap = JSON.parse(localStorage.getItem('granboard_map_v1')) || {};
+    let activeMap = {...segmentMap, ...localMap};
+
+    let soundEnabled = true;
+    let boardLocked = false;
+    let manualLock = false;
+    let mode = '501';
+    
+    let groupCode = localStorage.getItem('granboard_group_code') || '';
+    let globalProfiles = JSON.parse(localStorage.getItem('granboard_profiles')) || {};
+
+    let players = [
+        { name: "JOUEUR 1", score: 501, darts: [], cricket: { 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0 }, profileId: null, stats: { totalPoints: 0, totalDarts: 0 } },
+        { name: "JOUEUR 2", score: 501, darts: [], cricket: { 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0 }, profileId: null, stats: { totalPoints: 0, totalDarts: 0 } }
+    ];
+    let currentPlayer = 0;
+    let historyStack = [];
+    let
