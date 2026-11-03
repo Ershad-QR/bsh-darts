@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GranBoard Pro - Officiel</title>
+    <title>GranBoard Pro - PDC Edition</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -50,6 +50,27 @@
         .btn-purple { background: var(--purple); }
         .btn-dark { background: #334155; }
         
+        .sound-test-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 8px;
+            border-radius: 12px;
+        }
+        .sound-chip {
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 7px 4px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .sound-chip:active { background: #38bdf8; color: #000; }
+
         .setup-bar {
             display: grid;
             grid-template-columns: 1fr auto auto;
@@ -165,11 +186,19 @@
 
 <div class="app">
     <div class="top-bar">
-        <div style="font-weight:900; font-size:1.1rem;">🎯 GranBoard Pro</div>
+        <div style="font-weight:900; font-size:1.1rem;">🎯 GranBoard Pro <span style="font-size:0.7rem; color:var(--accent);">PDC</span></div>
         <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button" class="btn btn-dark" style="padding:5px 10px; font-size:0.8rem;" onclick="toggleSound()" id="soundBtn">🔊 Son</button>
+            <button type="button" class="btn btn-dark" style="padding:5px 10px; font-size:0.8rem;" onclick="toggleSound()" id="soundBtn">🔊 Ambiance PDC</button>
             <div class="badge" id="bleBadge">Déconnecté</div>
         </div>
+    </div>
+
+    <!-- Barre de test immédiat des nouveaux effets sonores -->
+    <div class="sound-test-bar">
+        <button type="button" class="sound-chip" onclick="testSound('hit')">🎯 Test Impact</button>
+        <button type="button" class="sound-chip" onclick="testSound('180')">🔥 Test 180!</button>
+        <button type="button" class="sound-chip" onclick="testSound('bull')">🐂 Test Bull</button>
+        <button type="button" class="sound-chip" onclick="testSound('bust')">💥 Test Bust</button>
     </div>
 
     <button type="button" class="btn btn-blue" id="btnConnect" onclick="connectGranBoard()">🔌 CONNECTER LA GRAN BOARD</button>
@@ -422,21 +451,18 @@
     let manualLock = false;
     let mode = '501';
 
-    // Configuration GitHub Storage
     let ghConfig = { owner: '', repo: '', token: '' };
     try {
         const savedGh = JSON.parse(localStorage.getItem('granboard_gh_config'));
         if (savedGh) ghConfig = savedGh;
     } catch(e) {}
 
-    // Détection automatique si on est sur une URL github.io (pré-remplit le pseudo et le dépôt !)
     if (!ghConfig.owner && window.location.hostname.endsWith('.github.io')) {
         ghConfig.owner = window.location.hostname.replace('.github.io', '');
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         if (pathParts.length > 0) ghConfig.repo = pathParts.at(0);
     }
 
-    // Détection d'un Lien Magique (?gh=owner|repo|token)
     try {
         const params = new URLSearchParams(window.location.search);
         if (params.has('gh')) {
@@ -453,8 +479,8 @@
     try { globalProfiles = JSON.parse(localStorage.getItem('granboard_profiles')) || {}; } catch(e) {}
 
     let players = Array.of(
-        { name: "JOUEUR 1", score: 501, darts: Array.of(), cricket: {}, profileId: null, stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 } },
-        { name: "JOUEUR 2", score: 501, darts: Array.of(), cricket: {}, profileId: null, stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 } }
+        { name: "JOUEUR 1", score: 501, darts: Array.of(), turnPoints: 0, cricket: {}, profileId: null, stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 } },
+        { name: "JOUEUR 2", score: 501, darts: Array.of(), turnPoints: 0, cricket: {}, profileId: null, stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 } }
     );
     let currentPlayer = 0;
     let historyStack = Array.of();
@@ -485,86 +511,171 @@
         }
     }
 
-    // --- SON D'IMPACT DE FLÉCHETTE PLANTÉE + SYSTÈME AUDIO ---
-    function playDartHitSound() {
+    // ============================================================================
+    // 🏟️ MOTEUR AUDIO "PDC STADIUM & ARCADE" (Vrais sons de foule + Synthé Arcade)
+    // ============================================================================
+    let audioCtx = null;
+    function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+
+    // Vrais fichiers audio d'ambiance (Bibliothèque Google Sounds officielle en HTTPS)
+    const sfxCrowdCheer = new Audio('https://actions.google.com/sounds/v1/crowds/team_cheer.ogg');
+    const sfxBigCrowd   = new Audio('https://actions.google.com/sounds/v1/crowds/battle_crowd_celebrate_stutter.ogg');
+    sfxCrowdCheer.volume = 0.55;
+    sfxBigCrowd.volume   = 0.75;
+
+    function playCrowd(big) {
         if (!soundEnabled) return;
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const now = ctx.currentTime;
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'triangle';
-            osc1.frequency.setValueAtTime(1600, now);
-            osc1.frequency.exponentialRampToValueAtTime(110, now + 0.035);
-            gain1.gain.setValueAtTime(0.6, now);
-            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.035);
-            
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(320, now + 0.015);
-            osc2.frequency.exponentialRampToValueAtTime(65, now + 0.08);
-            gain2.gain.setValueAtTime(0.4, now + 0.015);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-
-            osc1.connect(gain1); gain1.connect(ctx.destination);
-            osc2.connect(gain2); gain2.connect(ctx.destination);
-            osc1.start(now); osc1.stop(now + 0.04);
-            osc2.start(now + 0.015); osc2.stop(now + 0.085);
+            const snd = big ? sfxBigCrowd : sfxCrowdCheer;
+            snd.currentTime = 0;
+            snd.play().catch(function(){});
         } catch(e) {}
+    }
+
+    // Bruit réaliste de la fléchette qui claque dans le segment plastique (bruit blanc filtré + impact)
+    function playDartThud() {
+        if (!soundEnabled) return;
+        try {
+            const ctx = getAudioCtx();
+            const now = ctx.currentTime;
+
+            // 1. Burst de bruit percussif (le claquement sec des pointes plastiques dans la grille)
+            const bufferSize = ctx.sampleRate * 0.04;
+            const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+            }
+            const whiteNoise = ctx.createBufferSource();
+            whiteNoise.buffer = noiseBuffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1800, now);
+            filter.Q.setValueAtTime(1.5, now);
+
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.9, now);
+
+            whiteNoise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            whiteNoise.start(now);
+
+            // 2. Résonance sourde du caisson de la Gran Board
+            const bodyOsc = ctx.createOscillator();
+            const bodyGain = ctx.createGain();
+            bodyOsc.type = 'sine';
+            bodyOsc.frequency.setValueAtTime(190, now);
+            bodyOsc.frequency.exponentialRampToValueAtTime(48, now + 0.065);
+            bodyGain.gain.setValueAtTime(0.65, now);
+            bodyGain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+
+            bodyOsc.connect(bodyGain);
+            bodyGain.connect(ctx.destination);
+            bodyOsc.start(now);
+            bodyOsc.stop(now + 0.075);
+        } catch(e) {}
+    }
+
+    // Jingles d'Arcade Polyphoniques (Style borne d'arcade GranBoard / Dartslive)
+    function playNote(freq, startOffset, duration, type, vol) {
+        const ctx = getAudioCtx();
+        const now = ctx.currentTime + startOffset;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(vol || 0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.005, now + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
     }
 
     function playTone(type) {
         if (!soundEnabled) return;
-        playDartHitSound();
+        playDartThud();
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            const now = ctx.currentTime;
-
             if (type === 'single') {
-                osc.frequency.setValueAtTime(520, now + 0.06);
-                gain.gain.setValueAtTime(0.2, now + 0.06);
-                osc.start(now + 0.06); osc.stop(now + 0.14);
+                playNote(587.33, 0.04, 0.11, 'sine', 0.2);
+                playNote(880.00, 0.09, 0.14, 'sine', 0.18);
             } else if (type === 'double') {
-                osc.frequency.setValueAtTime(587, now + 0.06);
-                osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
-                gain.gain.setValueAtTime(0.25, now + 0.06);
-                osc.start(now + 0.06); osc.stop(now + 0.24);
-            } else if (type === 'triple' || type === 'bull') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523, now + 0.06);
-                osc.frequency.setValueAtTime(659, now + 0.14);
-                osc.frequency.setValueAtTime(1046, now + 0.22);
-                gain.gain.setValueAtTime(0.3, now + 0.06);
-                osc.start(now + 0.06); osc.stop(now + 0.36);
+                playNote(523.25, 0.04, 0.12, 'triangle', 0.25);
+                playNote(659.25, 0.10, 0.12, 'triangle', 0.25);
+                playNote(1046.50, 0.16, 0.22, 'triangle', 0.28);
+            } else if (type === 'triple') {
+                // Fanfare Arcade Triple
+                playNote(523.25, 0.04, 0.10, 'sawtooth', 0.18);
+                playNote(659.25, 0.10, 0.10, 'sawtooth', 0.18);
+                playNote(783.99, 0.16, 0.10, 'sawtooth', 0.20);
+                playNote(1046.50, 0.22, 0.30, 'sawtooth', 0.24);
+                playNote(1318.51, 0.22, 0.30, 'triangle', 0.20);
+            } else if (type === 'bull') {
+                // Fanfare Bullseye + Applaudissements de foule !
+                playNote(440, 0.03, 0.12, 'sawtooth', 0.25);
+                playNote(554.37, 0.10, 0.12, 'sawtooth', 0.25);
+                playNote(659.25, 0.17, 0.12, 'sawtooth', 0.25);
+                playNote(880, 0.24, 0.40, 'sawtooth', 0.30);
+                playCrowd(false);
             } else if (type === 'undo' || type === 'bust') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(280, now);
-                osc.frequency.linearRampToValueAtTime(120, now + 0.25);
-                gain.gain.setValueAtTime(0.3, now);
-                osc.start(now); osc.stop(now + 0.25);
+                playNote(220, 0.02, 0.18, 'sawtooth', 0.28);
+                playNote(146.83, 0.16, 0.30, 'sawtooth', 0.30);
             }
         } catch(e) {}
     }
 
-    function speak(text) {
-        if (!soundEnabled || !('speechSynthesis' in window)) return;
+    // Speaker Mastercaller PDC (Voix grave britannique uniquement sur les moments forts et fins de volées !)
+    function announcePDC(phrase, withBigCrowd) {
+        if (!soundEnabled) return;
+        if (withBigCrowd) playCrowd(true);
+        if (!('speechSynthesis' in window)) return;
+
         window.speechSynthesis.cancel();
         setTimeout(function() {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'fr-FR';
-            u.rate = 1.05;
+            const u = new SpeechSynthesisUtterance(phrase);
+            const voices = window.speechSynthesis.getVoices();
+            // Recherche d'une voix masculine britannique (style PDC Mastercaller)
+            const ukMale = voices.find(function(v) {
+                return v.lang.includes('en-GB') && (v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Arthur') || v.name.includes('Oliver'));
+            }) || voices.find(function(v) {
+                return v.lang.includes('en-GB');
+            }) || voices.find(function(v) {
+                return v.lang.startsWith('en');
+            });
+
+            if (ukMale) u.voice = ukMale;
+            u.lang = 'en-GB';
+            u.pitch = 0.72; // Voix grave de speaker d'arène
+            u.rate  = 0.88; // Cadence posée et puissante
+            u.volume = 1.0;
             window.speechSynthesis.speak(u);
-        }, 100);
+        }, 180);
+    }
+
+    function testSound(kind) {
+        if (kind === 'hit') {
+            playTone('single');
+        } else if (kind === '180') {
+            playTone('triple');
+            announcePDC("ONE HUNDRED, AND EIGHTY!", true);
+        } else if (kind === 'bull') {
+            playTone('bull');
+            announcePDC("BULLSEYE!", false);
+        } else if (kind === 'bust') {
+            playTone('bust');
+            announcePDC("NO SCORE!", false);
+        }
     }
 
     function toggleSound() {
         soundEnabled = !soundEnabled;
-        document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Son' : '🔇 Muet';
+        document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Ambiance PDC' : '🔇 Muet';
     }
 
     // --- SYNCHRONISATION DIRECTE AVEC VOTRE DÉPÔT GITHUB (profiles.json) ---
@@ -618,13 +729,11 @@
         prompt("Copiez ce Lien Magique et ouvrez-le sur votre téléphone ou PC pour relier automatiquement les profils :", magicUrl);
     }
 
-    // Fusion intelligente par nom de joueur (évite les doublons entre PC et Téléphone)
     function mergeProfiles(remoteProfiles) {
         if (!remoteProfiles || typeof remoteProfiles !== 'object') return;
         Object.keys(remoteProfiles).forEach(function(rId) {
             const rProf = remoteProfiles[rId];
             if (!rProf || !rProf.name) return;
-            // Cherche si un profil avec le même prénom existe déjà localement
             const existingId = Object.keys(globalProfiles).find(function(lId) {
                 return globalProfiles[lId].name.toUpperCase() === rProf.name.toUpperCase();
             });
@@ -666,15 +775,12 @@
 
     async function pushToGithub() {
         if (!ghConfig.owner || !ghConfig.repo || !ghConfig.token) {
-            log("ℹ️ Profil sauvegardé sur cet appareil (reliez GitHub pour synchroniser).");
+            log("ℹ️ Profil sauvegardé sur cet appareil.");
             return;
         }
         try {
             log("☁️ Sauvegarde dans GitHub (profiles.json)...");
-            // 1. On récupère d'abord la version sur GitHub pour fusionner sans écraser
             const currentSha = await pullFromGithub();
-
-            // 2. On envoie le fichier profiles.json mis à jour dans le dépôt GitHub
             const apiUrl = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json';
             const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(globalProfiles, null, 2))));
             const bodyObj = {
@@ -775,6 +881,7 @@
             name: name,
             score: startScore,
             darts: Array.of(),
+            turnPoints: 0,
             cricket: {},
             profileId: profileId || null,
             stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 }
@@ -816,7 +923,7 @@
             document.getElementById('btnConnect').style.display = 'none';
             log("✅ Gran Board 3s connectée !");
             playTone('bull');
-            speak("Cible connectée");
+            announcePDC("GAME ON!", false);
 
             char.addEventListener('characteristicvaluechanged', function(event) {
                 const val = event.target.value;
@@ -860,6 +967,7 @@
         players.forEach(function(p) {
             p.score = mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0));
             p.darts = Array.of();
+            p.turnPoints = 0;
             p.cricket = {};
             p.stats = { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 };
         });
@@ -878,47 +986,59 @@
         const p = players[currentPlayer];
         const pts = (sector === 25 && mult === 2) ? 50 : (sector * mult);
 
-        if (sector === 25) playTone('bull');
-        else if (mult === 3) playTone('triple');
-        else if (mult === 2) playTone('double');
-        else playTone('single');
+        // 1. Son d'impact physique + Jingle Arcade immédiat
+        if (sector === 25) {
+            playTone('bull');
+            if (mult === 2) announcePDC("BULLSEYE!", false);
+        } else if (mult === 3) {
+            playTone('triple');
+        } else if (mult === 2) {
+            playTone('double');
+        } else {
+            playTone('single');
+        }
 
         if (sector > 0) {
             p.stats.totalPoints += pts;
             p.stats.totalDarts += 1;
+            p.turnPoints = (p.turnPoints || 0) + pts;
             if (mult === 3) p.stats.triples += 1;
             if (sector === 25) p.stats.bulls += 1;
         }
+
+        let busted = false;
+        let won = false;
 
         if (mode === '501' || mode === '301') {
             const newScore = p.score - pts;
             p.darts.push(label);
             if (newScore < 0) {
+                busted = true;
                 playTone('bust');
-                speak("Bust !");
+                announcePDC("NO SCORE!", false);
                 const dartsCount = p.darts.length - 1;
                 if (dartsCount > 0 && historyStack.length >= dartsCount) {
                     p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
                 }
                 boardLocked = true;
             } else if (newScore === 0) {
+                won = true;
                 p.score = 0;
-                speak('Victoire de ' + p.name + ' !');
+                announcePDC("GAME SHOT!", true);
                 await handleWin(p);
-                alert('🏆 VICTOIRE DE ' + p.name + ' !');
+                setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name + ' !'); }, 400);
             } else {
                 p.score = newScore;
-                if (pts >= 40) speak('' + pts);
             }
         } else if (mode === 'clock') {
             p.darts.push(label);
             if (sector === p.score) {
-                speak("Touché !");
                 p.score += 1;
                 if (p.score > 20) {
-                    speak("Victoire !");
+                    won = true;
+                    announcePDC("GAME SHOT!", true);
                     await handleWin(p);
-                    alert("🏆 Gagné !");
+                    setTimeout(function() { alert("🏆 Gagné !"); }, 400);
                 }
             }
         } else if (mode === 'cricket') {
@@ -939,9 +1059,19 @@
             }
         }
 
+        // 2. Fin de la volée de 3 fléchettes : le Speaker PDC annonce le total de la volée !
         if (p.darts.length >= 3) {
             boardLocked = true;
-            speak("Retirez vos flèches");
+            if (!busted && !won && (mode === '501' || mode === '301')) {
+                const totalVisit = p.turnPoints || 0;
+                if (totalVisit === 180) {
+                    announcePDC("ONE HUNDRED, AND EIGHTY!", true);
+                } else if (totalVisit >= 100) {
+                    announcePDC(totalVisit + "!", true);
+                } else {
+                    announcePDC(totalVisit + "!", false);
+                }
+            }
         }
 
         document.getElementById('lastHitText').textContent = label + ' (' + pts + ' pts)';
@@ -985,11 +1115,13 @@
 
     function nextTurn() {
         players[currentPlayer].darts = Array.of();
+        players[currentPlayer].turnPoints = 0;
         currentPlayer = (currentPlayer + 1) % players.length;
         players[currentPlayer].darts = Array.of();
+        players[currentPlayer].turnPoints = 0;
         boardLocked = false;
         manualLock = false;
-        speak(players[currentPlayer].name);
+        playNote(660, 0.01, 0.08, 'sine', 0.15);
         updateLockUI();
         renderUI();
     }
@@ -1200,10 +1332,16 @@
         return '⊗';
     }
 
+    // Préchargement des voix du navigateur pour le Mastercaller PDC
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+    }
+
     updateGhBadge();
     initGame();
     pullFromGithub();
-    log("✅ 83 zones Gran Board 3s chargées !");
+    log("✅ Ambiance PDC Stadium + 83 zones prêtes !");
 </script>
 </body>
 </html>
