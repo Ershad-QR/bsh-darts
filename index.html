@@ -53,29 +53,13 @@
         .screen { display: none; flex-direction: column; gap: 12px; }
         .screen.active { display: flex; }
 
-        .options-grid-check {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 10px;
-        }
+        .options-grid-check { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .option-check-card {
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            font-weight: bold;
-            cursor: pointer;
-            border: 1px solid #334155;
+            background: #0f172a; padding: 10px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 0.85rem; font-weight: bold; cursor: pointer; border: 1px solid #334155;
         }
-        .option-check-card.checked {
-            border-color: var(--blue);
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-        }
+        .option-check-card.checked { border-color: var(--blue); background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 
         .player-selector-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -149,10 +133,7 @@
             background: #020617; color: #38bdf8; font-family: monospace;
             font-size: 0.72rem; padding: 10px; border-radius: 10px; height: 85px; overflow-y: auto;
         }
-        .stats-section {
-            margin-top: 12px; background: rgba(255,255,255,0.03);
-            border-radius: 12px; padding: 12px;
-        }
+        .stats-section { margin-top: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; }
         .stats-title { font-weight: 800; font-size: 0.85rem; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
         .ranking-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -184,8 +165,9 @@
 <div class="app">
     <div class="top-bar">
         <div style="font-weight:900; font-size:1.1rem;">🎯 BSH Dart Connect</div>
-        <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button" class="btn btn-dark" style="padding:5px 10px; font-size:0.8rem; width:auto;" onclick="toggleSound()" id="soundBtn">🔊 Voix : ON</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button type="button" class="btn btn-dark" style="padding:5px 9px; font-size:0.75rem; width:auto;" onclick="turnOffBoardLeds()" title="Éteindre LED cible">💡 OFF</button>
+            <button type="button" class="btn btn-dark" style="padding:5px 9px; font-size:0.75rem; width:auto;" onclick="toggleSound()" id="soundBtn">🔊 ON</button>
             <div class="badge" id="bleBadge">Déconnecté</div>
         </div>
     </div>
@@ -196,7 +178,7 @@
     <div id="screenSetup" class="screen active">
         <button type="button" class="btn btn-green" onclick="openStartGamePanel()" style="font-size:1.1rem; padding:18px;">🎮 DÉMARRER UNE PARTIE</button>
         <button type="button" class="btn btn-purple" onclick="openAddPlayerModal()">👤 PROFILS & PRONONCIATION</button>
-        <button type="button" class="btn btn-blue" onclick="openVoiceModal()">🎙️ RÉGLAGES VOIX (HUMAINE / MP3)</button>
+        <button type="button" class="btn btn-blue" onclick="openVoiceModal()">🎙️ RÉGLAGES VOIX (ELEVENLABS / MP3)</button>
         <button type="button" class="btn btn-orange" onclick="openStatsModal()">📊 STATISTIQUES & DUELS</button>
         <button type="button" class="btn btn-dark" onclick="openGithubModal()">☁️ RELIER À GITHUB (<span id="ghStatusDisplay">Non relié</span>)</button>
     </div>
@@ -245,7 +227,6 @@
             <option value="browser">📱 Voix du téléphone</option>
         </select>
 
-        <!-- Config ElevenLabs -->
         <div id="elevenConfigBox" class="stats-section" style="margin-top:0;">
             <div class="stats-title">Voix Humaine ElevenLabs (Plan Gratuit)</div>
             <label class="label-small">1. Clé API ElevenLabs (sk_...) :</label>
@@ -264,12 +245,10 @@
                 <button type="button" class="btn btn-dark" style="width:auto; padding:8px 10px; font-size:0.75rem;" onclick="loadMyElevenVoices()">🔄 Mes voix</button>
             </div>
 
-            <label class="label-small">ID de voix actif (modifiable manuellement) :</label>
+            <label class="label-small">ID de voix actif :</label>
             <input type="text" id="elVoiceIdInput" class="input-text-modern" placeholder="JBFqnCBsd6RMkjVDRZzb">
-            <div style="font-size:0.7rem; color:#94a3b8;">⚠️ Sur le plan gratuit, ElevenLabs bloque les voix communautaires via l'API : utilisez l'une des voix par défaut ci-dessus (qui parlent très bien français).</div>
         </div>
 
-        <!-- Config MP3 -->
         <div id="mp3ConfigBox" class="stats-section" style="margin-top:0; display:none;">
             <div class="stats-title">Mode Fichiers MP3 (dossier sounds/)</div>
             <div style="font-size:0.78rem; color:#cbd5e1;">
@@ -277,7 +256,6 @@
             </div>
         </div>
 
-        <!-- Config Navigateur -->
         <div id="browserConfigBox" class="stats-section" style="margin-top:0; display:none;">
             <div class="stats-title">Choisir la voix du téléphone</div>
             <select id="browserVoiceSelect"></select>
@@ -417,7 +395,10 @@
 <script>
     const GRAN_SERVICE = '442f1570-8a00-9a28-cbe1-e1d4212d53eb';
     const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
+    const GRAN_WRITE   = '442f1572-8a00-9a28-cbe1-e1d4212d53eb';
     const CRICKET_NUMS = Array.of(20, 19, 18, 17, 16, 15, 25);
+    // Ordre horaire d'une cible de fléchettes pour calculer la position LED autour de l'anneau (20 = 0x19)
+    const CLOCKWISE_SECTORS = Array.of(20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5);
 
     const segmentMap = {
         "2.3@": {"label":"S1","sector":1,"mult":1}, "2.4@": {"label":"T1","sector":1,"mult":3}, "2.5@": {"label":"S1","sector":1,"mult":1}, "2.6@": {"label":"D1","sector":1,"mult":2},
@@ -442,6 +423,9 @@
         "3.3@": {"label":"S20","sector":20,"mult":1}, "3.4@": {"label":"T20","sector":20,"mult":3}, "3.5@": {"label":"S20","sector":20,"mult":1}, "3.6@": {"label":"D20","sector":20,"mult":2},
         "8.0@": {"label":"BULL","sector":25,"mult":1}, "4.0@": {"label":"D-BULL","sector":25,"mult":2}, "BTN@": {"label":"BOUTON","sector":-1,"mult":1}
     };
+
+    let granWriteChar = null;
+    let ledOffTimer = null;
 
     let soundEnabled = true;
     let boardLocked = false;
@@ -527,6 +511,76 @@
     }
 
     // ============================================================================
+    // 💡 VRAI PROTOCOLE LED GRAN BOARD 3S (EXTRAIT DE VOTRE CAPTURE BTSNOOP !)
+    // ============================================================================
+    async function sendLedPacket(byteArr) {
+        if (!granWriteChar) return;
+        try {
+            const data = new Uint8Array(byteArr);
+            if (granWriteChar.properties && granWriteChar.properties.writeWithoutResponse) {
+                await granWriteChar.writeValueWithoutResponse(data);
+            } else {
+                await granWriteChar.writeValue(data);
+            }
+        } catch(e) {
+            log("⚠️ LED write : " + e.message);
+        }
+    }
+
+    // Commande officielle d'extinction totale (01 00 ... 01)
+    async function turnOffBoardLeds() {
+        if (ledOffTimer) { clearTimeout(ledOffTimer); ledOffTimer = null; }
+        await sendLedPacket(Array.of(0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01));
+    }
+
+    // Calcule l'index LED autour de la cible (Secteur 20 = 0x19 = 25 dans votre capture)
+    function getLedPosForSector(sector) {
+        const idx = CLOCKWISE_SECTORS.indexOf(sector);
+        if (idx === -1) return 0x19;
+        return (25 + idx * 3) % 60;
+    }
+
+    // Flash lumineux officiel à l'impact, puis extinction totale automatique pour 0 chauffe !
+    async function playBoardLedHit(sector, mult, isTonPlus) {
+        if (!granWriteChar) return;
+        if (ledOffTimer) { clearTimeout(ledOffTimer); ledOffTimer = null; }
+
+        if (isTonPlus) {
+            // Animation officielle 100+ points (Low Ton) capturée !
+            await sendLedPacket(Array.of(0x11, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x0D, 0x00, 0x05, 0x02, 0x00, 0x01));
+            ledOffTimer = setTimeout(turnOffBoardLeds, 2400);
+            return;
+        }
+
+        if (sector === 25 && mult === 2) {
+            // Double Bull (0x1F) capturé !
+            await sendLedPacket(Array.of(0x1F, 0x7D, 0x0A, 0x4A, 0x7D, 0x0A, 0x4A, 0xFC, 0x16, 0x62, 0x02, 0x00, 0x23, 0x01, 0x00, 0x01));
+            ledOffTimer = setTimeout(turnOffBoardLeds, 1600);
+        } else if (sector === 25) {
+            // Simple Bull (0x18) capturé !
+            await sendLedPacket(Array.of(0x18, 0x7D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x01));
+            ledOffTimer = setTimeout(turnOffBoardLeds, 1200);
+        } else if (sector >= 1 && sector <= 20) {
+            // Simple (0x01), Double (0x02) ou Triple (0x03) capturé !
+            const pos = getLedPosForSector(sector);
+            const r = (currentPlayer % 2 === 0) ? 0x7D : 0x00;
+            const g = (currentPlayer % 2 === 1) ? 0x7D : 0x00;
+            const b = (currentPlayer % 2 === 0) ? 0x00 : 0x40;
+            const extra = (mult === 3) ? 0x7D : 0x00;
+            await sendLedPacket(Array.of(mult, r, g, b, 0xD7, 0x4C, 0x00, extra, 0x00, 0x00, pos, 0x00, 0x14, 0x00, 0x00, 0x01));
+            ledOffTimer = setTimeout(turnOffBoardLeds, 1100);
+        }
+    }
+
+    async function playBoardLedNextTurn() {
+        if (!granWriteChar) return;
+        if (ledOffTimer) { clearTimeout(ledOffTimer); ledOffTimer = null; }
+        // Animation officielle de changement de tour capturée !
+        await sendLedPacket(Array.of(0x11, 0x7D, 0x00, 0x00, 0x00, 0x7D, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x05, 0x00, 0x00, 0x01));
+        ledOffTimer = setTimeout(turnOffBoardLeds, 1000);
+    }
+
+    // ============================================================================
     // 🎙️ MOTEUR VOCAL ELEVENLABS + DIAGNOSTIC CLAIR
     // ============================================================================
     let audioCtx = null;
@@ -548,7 +602,6 @@
             osc1.frequency.exponentialRampToValueAtTime(100, now + 0.03);
             gain1.gain.setValueAtTime(0.3, now);
             gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-            
             const osc2 = ctx.createOscillator();
             const gain2 = ctx.createGain();
             osc2.type = 'sine';
@@ -556,7 +609,6 @@
             osc2.frequency.exponentialRampToValueAtTime(45, now + 0.06);
             gain2.gain.setValueAtTime(0.5, now + 0.005);
             gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
-
             osc1.connect(gain1); gain1.connect(ctx.destination);
             osc2.connect(gain2); gain2.connect(ctx.destination);
             osc1.start(now); osc1.stop(now + 0.035);
@@ -566,9 +618,7 @@
 
     function getSpokenName(playerObj) {
         let prof = playerObj.profileId ? globalProfiles[playerObj.profileId] : playerObj;
-        if (prof && prof.phonetic && prof.phonetic.trim() !== "") {
-            return prof.phonetic.trim();
-        }
+        if (prof && prof.phonetic && prof.phonetic.trim() !== "") return prof.phonetic.trim();
         const raw = (playerObj.name || "Joueur").trim().toLowerCase();
         return raw.charAt(0).toUpperCase() + raw.slice(1);
     }
@@ -582,12 +632,8 @@
 
     async function speakFrench(phrase, mp3Key, isManualTest) {
         if (!soundEnabled && !isManualTest) return;
+        if (currentPlayingAudio) { try { currentPlayingAudio.pause(); } catch(e) {} }
 
-        if (currentPlayingAudio) {
-            try { currentPlayingAudio.pause(); } catch(e) {}
-        }
-
-        // 1. Mode MP3 GitHub
         if (voiceConfig.engine === 'mp3' && mp3Key) {
             const cleanKey = mp3Key.toLowerCase().replace(/[^a-z0-9]/g, '');
             try {
@@ -597,20 +643,13 @@
                 if (isManualTest) showVoiceStatus(true, "✅ Fichier sounds/" + cleanKey + ".mp3 lu !");
                 return;
             } catch(e) {
-                if (isManualTest) {
-                    showVoiceStatus(false, "❌ Fichier sounds/" + cleanKey + ".mp3 introuvable sur votre GitHub.");
-                    return;
-                }
+                if (isManualTest) { showVoiceStatus(false, "❌ Fichier sounds/" + cleanKey + ".mp3 introuvable."); return; }
             }
         }
 
-        // 2. Mode Voix IA Humaine ElevenLabs
         if (voiceConfig.engine === 'elevenlabs') {
             if (!voiceConfig.elApiKey) {
-                if (isManualTest) {
-                    showVoiceStatus(false, "❌ Collez d'abord votre clé API ElevenLabs (sk_...) ci-dessus !");
-                    return;
-                }
+                if (isManualTest) { showVoiceStatus(false, "❌ Collez d'abord votre clé API ElevenLabs (sk_...) !"); return; }
             } else {
                 const vId = (voiceConfig.elVoiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
                 const cacheKey = vId + '|' + phrase;
@@ -637,7 +676,6 @@
                             voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.25 }
                         })
                     });
-
                     if (res.ok) {
                         const blob = await res.blob();
                         const url = URL.createObjectURL(blob);
@@ -652,47 +690,32 @@
                         try {
                             const errJson = await res.json();
                             if (errJson.detail && errJson.detail.message) detailMsg = errJson.detail.message;
-                            else if (typeof errJson.detail === 'string') detailMsg = errJson.detail;
                         } catch(e) {}
                         log("⚠️ ElevenLabs (" + res.status + ") : " + detailMsg);
                         if (isManualTest) {
                             if (res.status === 402 || detailMsg.includes('library voices')) {
-                                showVoiceStatus(false, "❌ Refus ElevenLabs (Plan Gratuit) : cette voix communautaire est payante via l'API. Choisissez une voix par défaut dans la liste déroulante (ex: George, Roger, Daniel) !");
+                                showVoiceStatus(false, "❌ Voix communautaire payante sur Plan Gratuit : sélectionnez George, Roger, Daniel ou Callum dans la liste !");
                             } else {
                                 showVoiceStatus(false, "❌ Refus ElevenLabs (" + res.status + ") : " + detailMsg);
                             }
-                            return; // Ne bascule PAS sur la voix robot pendant le test !
+                            return;
                         }
                     }
                 } catch(e) {
-                    log("⚠️ Erreur réseau ElevenLabs : " + e.message);
-                    if (isManualTest) {
-                        showVoiceStatus(false, "❌ Erreur réseau : " + e.message);
-                        return;
-                    }
+                    if (isManualTest) { showVoiceStatus(false, "❌ Erreur : " + e.message); return; }
                 }
             }
         }
 
-        // 3. Mode Voix du téléphone
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         setTimeout(function() {
             const u = new SpeechSynthesisUtterance(phrase);
             const voices = window.speechSynthesis.getVoices();
-            let chosen = null;
-            if (voiceConfig.browserVoiceName) {
-                chosen = voices.find(function(v) { return v.name === voiceConfig.browserVoiceName; });
-            }
-            if (!chosen) {
-                chosen = voices.find(function(v) {
-                    return v.lang.includes('fr-FR') && (v.name.includes('Google') || v.name.includes('Thomas') || v.name.includes('Nicolas'));
-                }) || voices.find(function(v) { return v.lang.includes('fr'); });
-            }
+            let chosen = voiceConfig.browserVoiceName ? voices.find(function(v) { return v.name === voiceConfig.browserVoiceName; }) : null;
+            if (!chosen) chosen = voices.find(function(v) { return v.lang.includes('fr-FR'); }) || voices.find(function(v) { return v.lang.includes('fr'); });
             if (chosen) u.voice = chosen;
-            u.lang = 'fr-FR';
-            u.pitch = 0.90;
-            u.rate  = 1.02;
+            u.lang = 'fr-FR'; u.pitch = 0.90; u.rate = 1.02;
             window.speechSynthesis.speak(u);
             if (isManualTest) showVoiceStatus(true, "📱 Voix du téléphone jouée.");
         }, 60);
@@ -700,86 +723,58 @@
 
     function toggleSound() {
         soundEnabled = !soundEnabled;
-        document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 Voix : ON' : '🔇 Muet';
+        document.getElementById('soundBtn').textContent = soundEnabled ? '🔊 ON' : '🔇 Muet';
     }
 
-    // --- MODALE RÉGLAGES VOIX ---
     function openVoiceModal() {
         document.getElementById('voiceEngineSelect').value = voiceConfig.engine || 'elevenlabs';
         document.getElementById('elApiKeyInput').value = voiceConfig.elApiKey || '';
         document.getElementById('elVoiceIdInput').value = voiceConfig.elVoiceId || 'JBFqnCBsd6RMkjVDRZzb';
-        const presetSel = document.getElementById('elPresetSelect');
-        for (let i = 0; i < presetSel.options.length; i++) {
-            if (presetSel.options[i].value === voiceConfig.elVoiceId) presetSel.selectedIndex = i;
-        }
         document.getElementById('voiceTestStatus').className = 'voice-status';
-        populateBrowserVoices();
-        toggleVoiceConfigFields();
+        populateBrowserVoices(); toggleVoiceConfigFields();
         document.getElementById('voiceModal').style.display = 'flex';
     }
     function closeVoiceModal() { document.getElementById('voiceModal').style.display = 'none'; }
-
-    function onSelectPresetVoice() {
-        const val = document.getElementById('elPresetSelect').value;
-        if (val) document.getElementById('elVoiceIdInput').value = val;
-    }
+    function onSelectPresetVoice() { document.getElementById('elVoiceIdInput').value = document.getElementById('elPresetSelect').value; }
 
     async function loadMyElevenVoices() {
         const key = document.getElementById('elApiKeyInput').value.trim();
-        if (!key) {
-            showVoiceStatus(false, "❌ Collez d'abord votre clé API sk_... avant de charger vos voix.");
-            return;
-        }
+        if (!key) { showVoiceStatus(false, "❌ Collez d'abord votre clé API sk_..."); return; }
         try {
-            showVoiceStatus(true, "⏳ Chargement des voix autorisées sur votre compte...");
-            const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-                headers: { 'xi-api-key': key }
-            });
-            if (!res.ok) {
-                showVoiceStatus(false, "❌ Impossible de lire les voix (code " + res.status + "). Vérifiez votre clé API.");
-                return;
-            }
+            showVoiceStatus(true, "⏳ Chargement de vos voix...");
+            const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
+            if (!res.ok) { showVoiceStatus(false, "❌ Clé refusée (" + res.status + ")."); return; }
             const data = await res.json();
             const sel = document.getElementById('elPresetSelect');
             sel.innerHTML = '';
-            const voicesList = data.voices || Array.of();
-            voicesList.forEach(function(v) {
+            (data.voices || Array.of()).forEach(function(v) {
                 const opt = document.createElement('option');
-                opt.value = v.voice_id;
-                opt.textContent = v.name + ' (' + (v.category || 'premade') + ')';
+                opt.value = v.voice_id; opt.textContent = v.name + ' (' + (v.category || 'premade') + ')';
                 sel.appendChild(opt);
             });
-            if (voicesList.length > 0) {
-                document.getElementById('elVoiceIdInput').value = voicesList.at(0).voice_id;
-                showVoiceStatus(true, "✅ " + voicesList.length + " voix chargées depuis votre compte ElevenLabs !");
+            if (sel.options.length > 0) {
+                document.getElementById('elVoiceIdInput').value = sel.options[0].value;
+                showVoiceStatus(true, "✅ " + sel.options.length + " voix chargées !");
             }
-        } catch(e) {
-            showVoiceStatus(false, "❌ Erreur : " + e.message);
-        }
+        } catch(e) { showVoiceStatus(false, "❌ Erreur : " + e.message); }
     }
 
     function populateBrowserVoices() {
-        const sel = document.getElementById('browserVoiceSelect');
-        sel.innerHTML = '';
+        const sel = document.getElementById('browserVoiceSelect'); sel.innerHTML = '';
         const voices = ('speechSynthesis' in window) ? window.speechSynthesis.getVoices() : Array.of();
         const frVoices = voices.filter(function(v) { return v.lang.toLowerCase().includes('fr'); });
-        const list = frVoices.length > 0 ? frVoices : voices;
-        list.forEach(function(v) {
-            const opt = document.createElement('option');
-            opt.value = v.name;
-            opt.textContent = v.name + ' (' + v.lang + ')';
+        (frVoices.length > 0 ? frVoices : voices).forEach(function(v) {
+            const opt = document.createElement('option'); opt.value = v.name; opt.textContent = v.name;
             if (v.name === voiceConfig.browserVoiceName) opt.selected = true;
             sel.appendChild(opt);
         });
     }
-
     function toggleVoiceConfigFields() {
         const eng = document.getElementById('voiceEngineSelect').value;
         document.getElementById('elevenConfigBox').style.display = eng === 'elevenlabs' ? 'block' : 'none';
         document.getElementById('mp3ConfigBox').style.display = eng === 'mp3' ? 'block' : 'none';
         document.getElementById('browserConfigBox').style.display = eng === 'browser' ? 'block' : 'none';
     }
-
     function syncVoiceInputsToConfig() {
         voiceConfig.engine = document.getElementById('voiceEngineSelect').value;
         voiceConfig.elApiKey = document.getElementById('elApiKeyInput').value.trim();
@@ -787,45 +782,40 @@
         voiceConfig.browserVoiceName = document.getElementById('browserVoiceSelect').value;
         localStorage.setItem('granboard_voice_config', JSON.stringify(voiceConfig));
     }
+    function saveVoiceConfig() { syncVoiceInputsToConfig(); closeVoiceModal(); }
+    function runVoiceTest() { syncVoiceInputsToConfig(); speakFrench(document.getElementById('testPhraseInput').value.trim() || "Allez Kan-dalf !", 'test', true); }
 
-    function saveVoiceConfig() {
-        syncVoiceInputsToConfig();
-        log("🎙️ Réglages voix enregistrés (" + voiceConfig.engine + ").");
-        closeVoiceModal();
-    }
-
-    function runVoiceTest() {
-        syncVoiceInputsToConfig();
-        const txt = document.getElementById('testPhraseInput').value.trim() || "Allez Kan-dalf, à toi de jouer !";
-        speakFrench(txt, 'test', true);
-    }
-
-    // --- CONNEXION BLUETOOTH ---
+    // --- CONNEXION BLUETOOTH + EXTINCTION IMMÉDIATE DE L'ARC-EN-CIEL ---
     async function connectGranBoard() {
-        if (!navigator.bluetooth) {
-            alert("Bluetooth non disponible ici. Utilisez Google Chrome sur Android.");
-            return;
-        }
+        if (!navigator.bluetooth) { alert("Bluetooth non disponible ici. Utilisez Google Chrome sur Android."); return; }
         try {
             log("Recherche de la Gran Board...");
             const device = await navigator.bluetooth.requestDevice({
                 acceptAllDevices: true,
                 optionalServices: Array.of(GRAN_SERVICE)
             });
-
-            log("Appareil sélectionné : " + (device.name || "Cible"));
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService(GRAN_SERVICE);
-            const char = await service.getCharacteristic(GRAN_NOTIFY);
-            await char.startNotifications();
+
+            const notifyChar = await service.getCharacteristic(GRAN_NOTIFY);
+            await notifyChar.startNotifications();
+
+            // Récupération du canal d'écriture 442f1572 pour piloter et éteindre les LED !
+            try {
+                granWriteChar = await service.getCharacteristic(GRAN_WRITE);
+                await turnOffBoardLeds();
+                log("💡 Arc-en-ciel éteint ! LED prêtes en mode flash d'impact.");
+            } catch(e) {
+                log("ℹ️ Canal LED non trouvé : " + e.message);
+            }
 
             document.getElementById('bleBadge').textContent = "Connecté";
             document.getElementById('bleBadge').classList.add('ok');
             document.getElementById('btnConnect').style.display = 'none';
-            log("✅ Cible Gran Board 3s connectée et prête !");
+            log("✅ Cible Gran Board 3s connectée !");
             speakFrench("Cible connectée. Bon jeu !", "connect", false);
 
-            char.addEventListener('characteristicvaluechanged', function(event) {
+            notifyChar.addEventListener('characteristicvaluechanged', function(event) {
                 const val = event.target.value;
                 let str = "";
                 for (let i = 0; i < val.byteLength; i++) {
@@ -844,34 +834,27 @@
         if (!code || code.startsWith("GB")) return;
 
         if (!document.getElementById('screenGame').classList.contains('active')) {
-            const preview = segmentMap[code] ? segmentMap[code].label : code;
-            log("🎯 Test cible (hors partie) : " + preview);
+            const hit = segmentMap[code];
+            log("🎯 Test cible (hors partie) : " + (hit ? hit.label : code));
             playDartPocSound();
+            if (hit && hit.sector > 0) playBoardLedHit(hit.sector, hit.mult, false);
             return;
         }
-
-        if (segmentMap[code] && segmentMap[code].sector === -1) {
-            nextTurn();
-            return;
-        }
-
+        if (segmentMap[code] && segmentMap[code].sector === -1) { nextTurn(); return; }
         if (boardLocked || manualLock) return;
-
         if (segmentMap[code]) {
             const hit = segmentMap[code];
             registerHit(hit.label, hit.sector, hit.mult);
         } else {
-            log('Bouton cible (' + code + ')');
             nextTurn();
         }
     }
 
-    // --- CONFIGURATION & DÉMARRAGE DE PARTIE ---
+    // --- PARTIE ---
     function openStartGamePanel() {
         const selectContainer = document.getElementById('selectPlayersList');
         selectContainer.innerHTML = '';
-        const ids = Object.keys(globalProfiles);
-        ids.forEach(function(id) {
+        Object.keys(globalProfiles).forEach(function(id) {
             const prof = globalProfiles[id];
             const div = document.createElement('div');
             div.className = 'player-selector-row';
@@ -882,14 +865,11 @@
         document.getElementById('startGameModal').style.display = 'flex';
         toggleOptionBox();
     }
-
     function closeStartGamePanel() { document.getElementById('startGameModal').style.display = 'none'; }
-
     function toggleOptionBox() {
         const m = document.getElementById('gameMode').value;
         document.getElementById('doubleOptionsBox').style.display = (m === '501' || m === '301') ? 'grid' : 'none';
     }
-
     function toggleOptionCheck(elementId) {
         if (elementId === 'optDoubleIn') {
             isDoubleInChecked = !isDoubleInChecked;
@@ -906,58 +886,40 @@
         mode = document.getElementById('gameMode').value;
         const checkedInputs = document.querySelectorAll('#selectPlayersList input[type="checkbox"]:checked');
         players = Array.of();
-        
         checkedInputs.forEach(function(input) {
             const id = input.value;
             const prof = globalProfiles[id];
             players.push({
-                name: prof.name,
-                phonetic: prof.phonetic || '',
+                name: prof.name, phonetic: prof.phonetic || '',
                 score: mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0)),
-                darts: Array.of(),
-                turnPoints: 0,
-                cricket: {},
-                profileId: id,
+                darts: Array.of(), turnPoints: 0, cricket: {}, profileId: id,
                 stats: { totalPoints: 0, totalDarts: 0, triples: 0, bulls: 0 }
             });
         });
-
-        if (players.length === 0) { alert("Veuillez cocher au moins un joueur !"); return; }
-
+        if (players.length === 0) { alert("Cochez au moins un joueur !"); return; }
         closeStartGamePanel();
         document.getElementById('screenSetup').classList.remove('active');
         document.getElementById('screenGame').classList.add('active');
-        
-        currentPlayer = 0;
-        historyStack = Array.of();
-        boardLocked = false;
-        manualLock = false;
-        
-        updateLockUI();
-        renderUI();
-        const firstSpoken = getSpokenName(players[currentPlayer]);
-        speakFrench("C'est parti ! " + firstSpoken + ", à toi de jouer.", players[currentPlayer].name, false);
-        log("🎮 Partie lancée : " + mode);
+        currentPlayer = 0; historyStack = Array.of(); boardLocked = false; manualLock = false;
+        turnOffBoardLeds();
+        updateLockUI(); renderUI();
+        speakFrench("C'est parti ! " + getSpokenName(players[currentPlayer]) + ", à toi de jouer.", players[currentPlayer].name, false);
     }
 
     function quitGame() {
         if (confirm("Quitter la partie en cours ?")) {
+            turnOffBoardLeds();
             document.getElementById('screenGame').classList.remove('active');
             document.getElementById('screenSetup').classList.add('active');
-            log("🛑 Retour au menu principal.");
         }
     }
 
-    // --- GESTION DU JEU ---
     async function registerHit(label, sector, mult) {
-        historyStack.push(JSON.parse(JSON.stringify({
-            players: players, currentPlayer: currentPlayer, boardLocked: boardLocked, label: label
-        })));
+        historyStack.push(JSON.parse(JSON.stringify({ players: players, currentPlayer: currentPlayer, boardLocked: boardLocked, label: label })));
         const p = players[currentPlayer];
         const pts = (sector === 25 && mult === 2) ? 50 : (sector * mult);
 
         playDartPocSound();
-
         let verbalLabel = label.replace('S', '').replace('D', 'Double ').replace('T', 'Triple ');
         if (label === 'BULL') verbalLabel = 'Bulle';
         if (label === 'D-BULL') verbalLabel = 'Double Bulle';
@@ -965,25 +927,24 @@
         speakFrench(verbalLabel, label, false);
 
         if (sector > 0) {
-            p.stats.totalPoints += pts;
-            p.stats.totalDarts += 1;
-            p.turnPoints = (p.turnPoints || 0) + pts;
+            p.stats.totalPoints += pts; p.stats.totalDarts += 1; p.turnPoints = (p.turnPoints || 0) + pts;
             if (mult === 3) p.stats.triples += 1;
             if (sector === 25) p.stats.bulls += 1;
         }
 
         let won = false;
+        let busted = false;
         const spokenName = getSpokenName(p);
 
         if (mode === '501' || mode === '301') {
             const newScore = p.score - pts;
             const hasStarted = p.score < (mode === '501' ? 501 : 301);
-
             if (isDoubleInChecked && !hasStarted && mult !== 2 && sector !== 25) {
                 p.darts.push("Hors Double");
             } else {
                 p.darts.push(label);
                 if (newScore < 0 || (newScore === 1 && isDoubleOutChecked)) {
+                    busted = true;
                     speakFrench("Ah, ça dépasse !", "bust", false);
                     const dartsCount = p.darts.length - 1;
                     if (dartsCount > 0 && historyStack.length >= dartsCount) {
@@ -992,13 +953,13 @@
                     boardLocked = true;
                 } else if (newScore === 0) {
                     if (isDoubleOutChecked && mult !== 2 && sector !== 25) {
+                        busted = true;
                         speakFrench("Il faut finir sur un double !", "bust", false);
                         const dartsCount = p.darts.length - 1;
                         p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
                         boardLocked = true;
                     } else {
-                        won = true;
-                        p.score = 0;
+                        won = true; p.score = 0;
                         speakFrench("Et c'est gagné pour " + spokenName + " ! Tournée générale !", "victoire", false);
                         await handleWin(p);
                         setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
@@ -1012,8 +973,7 @@
             if (sector === p.score) {
                 p.score += 1;
                 if (p.score > 20) {
-                    won = true;
-                    speakFrench("Partie gagnée pour " + spokenName + " !", "victoire", false);
+                    won = true; speakFrench("Partie gagnée pour " + spokenName + " !", "victoire", false);
                     await handleWin(p);
                     setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
                 }
@@ -1025,23 +985,23 @@
                     if ((p.cricket[sector] || 0) < 3) {
                         p.cricket[sector] = (p.cricket[sector] || 0) + 1;
                     } else {
-                        const openForOthers = players.some(function(other, idx) {
-                            return idx !== currentPlayer && (other.cricket[sector] || 0) < 3;
-                        });
+                        const openForOthers = players.some(function(other, idx) { return idx !== currentPlayer && (other.cricket[sector] || 0) < 3; });
                         if (openForOthers) p.score += (sector === 25 ? 25 : sector);
                     }
                 }
             }
         }
 
+        // Déclenchement de la vraie LED officielle (ou animation 100+ pts à la 3e fléchette !)
+        const isTonPlus = (p.darts.length >= 3 && !busted && (p.turnPoints || 0) >= 100);
+        playBoardLedHit(sector, mult, isTonPlus || won);
+
         if (p.darts.length >= 3) {
             boardLocked = true;
-            if (!won) speakFrench("C'est bon, retirez vos flèches.", "retrait", false);
+            if (!won && !busted) speakFrench("C'est bon, retirez vos flèches.", "retrait", false);
         }
-
         document.getElementById('lastHitText').textContent = label + ' (' + pts + ' pts)';
-        updateLockUI();
-        renderUI();
+        updateLockUI(); renderUI();
     }
 
     async function handleWin(winningPlayer) {
@@ -1061,31 +1021,23 @@
     function undoLast() {
         if (historyStack.length === 0) return;
         const prev = historyStack.pop();
-        players = prev.players;
-        currentPlayer = prev.currentPlayer;
-        boardLocked = prev.boardLocked;
+        players = prev.players; currentPlayer = prev.currentPlayer; boardLocked = prev.boardLocked;
         document.getElementById('lastHitText').textContent = 'Annulé (' + prev.label + ')';
-        updateLockUI();
-        renderUI();
+        updateLockUI(); renderUI();
     }
 
     function nextTurn() {
         if (players.length === 0) return;
-        players[currentPlayer].darts = Array.of();
-        players[currentPlayer].turnPoints = 0;
+        players[currentPlayer].darts = Array.of(); players[currentPlayer].turnPoints = 0;
         currentPlayer = (currentPlayer + 1) % players.length;
-        players[currentPlayer].darts = Array.of();
-        players[currentPlayer].turnPoints = 0;
-        boardLocked = false;
-        manualLock = false;
-        const nextSpoken = getSpokenName(players[currentPlayer]);
-        speakFrench("Allez " + nextSpoken + ", à toi !", players[currentPlayer].name, false);
-        updateLockUI();
-        renderUI();
+        players[currentPlayer].darts = Array.of(); players[currentPlayer].turnPoints = 0;
+        boardLocked = false; manualLock = false;
+        playBoardLedNextTurn();
+        speakFrench("Allez " + getSpokenName(players[currentPlayer]) + ", à toi !", players[currentPlayer].name, false);
+        updateLockUI(); renderUI();
     }
 
     function toggleManualLock() { manualLock = !manualLock; updateLockUI(); }
-
     function updateLockUI() {
         const isLocked = boardLocked || manualLock;
         document.getElementById('shieldBanner').style.display = isLocked ? 'block' : 'none';
@@ -1093,38 +1045,25 @@
         btn.textContent = isLocked ? '🔒 Cible Verrouillée' : '🔓 Pause retrait';
         btn.className = isLocked ? 'btn btn-orange' : 'btn btn-purple';
     }
-
     function removePlayer(idx) {
         if (players.length <= 1) { alert("Il doit rester au moins 1 joueur !"); return; }
-        players.splice(idx, 1);
-        if (currentPlayer >= players.length) currentPlayer = 0;
-        renderUI();
+        players.splice(idx, 1); if (currentPlayer >= players.length) currentPlayer = 0; renderUI();
     }
-
     function selectPlayer(idx) { currentPlayer = idx; boardLocked = false; updateLockUI(); renderUI(); }
-
-    function formatCricketMarks(count) {
-        if (count === 0) return '-';
-        if (count === 1) return '/';
-        if (count === 2) return 'X';
-        return '⊗';
-    }
+    function formatCricketMarks(count) { return count === 0 ? '-' : (count === 1 ? '/' : (count === 2 ? 'X' : '⊗')); }
 
     function renderUI() {
-        const list = document.getElementById('playersList');
-        list.innerHTML = '';
+        const list = document.getElementById('playersList'); list.innerHTML = '';
         players.forEach(function(p, idx) {
             const card = document.createElement('div');
             card.className = 'p-card' + (idx === currentPlayer ? ' active' : '');
             const dartsHtml = p.darts.map(function(d) { return '<span class="dart-pill">' + d + '</span>'; }).join('');
             const scoreLabel = mode === 'clock' ? 'Cible : ' + p.score : p.score + ' pts';
-
             let statsText = "Profil invité";
             if (p.profileId && globalProfiles[p.profileId]) {
                 const prof = globalProfiles[p.profileId];
                 statsText = '🏆 ' + (prof.wins || 0) + '/' + (prof.gamesPlayed || 0) + ' vict.';
             }
-
             card.innerHTML = '<div class="p-info" onclick="selectPlayer(' + idx + ')">' +
                     '<div class="p-name ' + (idx === currentPlayer ? 'active-name' : '') + '">👤 ' + p.name + (idx === currentPlayer ? ' 🎯' : '') + '</div>' +
                     '<div class="p-stats-label">' + statsText + '</div>' +
@@ -1141,22 +1080,17 @@
             let headHtml = '<div class="c-grid-header"><div>Joueur</div>';
             CRICKET_NUMS.forEach(function(n) { headHtml += '<div>' + (n === 25 ? 'BULL' : n) + '</div>'; });
             headHtml += '</div>';
-
             let rowsHtml = '';
             players.forEach(function(p) {
                 rowsHtml += '<div class="c-grid-row"><div class="c-grid-name">' + p.name + '</div>';
-                CRICKET_NUMS.forEach(function(num) {
-                    rowsHtml += '<div class="c-cell-num">' + formatCricketMarks(p.cricket[num] || 0) + '</div>';
-                });
+                CRICKET_NUMS.forEach(function(num) { rowsHtml += '<div class="c-cell-num">' + formatCricketMarks(p.cricket[num] || 0) + '</div>'; });
                 rowsHtml += '</div>';
             });
             cBoard.innerHTML = headHtml + rowsHtml;
-        } else {
-            cBoard.style.display = 'none';
-        }
+        } else { cBoard.style.display = 'none'; }
     }
 
-    // --- GESTION PROFILS & PRONONCIATION ---
+    // --- PROFILS ---
     async function openAddPlayerModal() {
         document.getElementById('newProfileInput').value = '';
         document.getElementById('newProfilePhonetic').value = '';
@@ -1165,39 +1099,25 @@
         await pullFromGithub(false);
     }
     function closeAddPlayerModal() { document.getElementById('addPlayerModal').style.display = 'none'; }
-
     function renderExistingProfilesList() {
-        const container = document.getElementById('existingProfilesList');
-        container.innerHTML = '';
-        const ids = Object.keys(globalProfiles);
-        ids.forEach(function(id) {
+        const container = document.getElementById('existingProfilesList'); container.innerHTML = '';
+        Object.keys(globalProfiles).forEach(function(id) {
             const prof = globalProfiles[id];
-            const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.gap = '5px';
+            const row = document.createElement('div'); row.style.display = 'flex'; row.style.gap = '5px';
             row.innerHTML = '<div class="btn btn-dark" style="flex:1; justify-content:flex-start; flex-direction:column; align-items:flex-start; padding:8px 10px; gap:2px;">' +
                 '<span style="font-size:0.9rem;">👤 ' + prof.name + '</span>' +
                 '<span style="font-size:0.7rem; color:#38bdf8;">Prononcé : ' + (prof.phonetic || prof.name.toLowerCase()) + '</span>' +
                 '</div>' +
-                '<button type="button" class="btn btn-orange" style="padding:8px 10px; width:auto;" onclick="testProfileVoice(\'' + id + '\')" title="Écouter">🔊</button>' +
-                '<button type="button" class="btn btn-blue" style="padding:8px 10px; width:auto;" onclick="editProfilePhonetic(\'' + id + '\')" title="Modifier prononciation">✏️</button>' +
-                '<button type="button" class="btn btn-red" style="padding:8px 10px; width:auto;" onclick="deleteSavedProfile(\'' + id + '\')" title="Supprimer">🗑️</button>';
+                '<button type="button" class="btn btn-orange" style="padding:8px 10px; width:auto;" onclick="testProfileVoice(\'' + id + '\')">🔊</button>' +
+                '<button type="button" class="btn btn-blue" style="padding:8px 10px; width:auto;" onclick="editProfilePhonetic(\'' + id + '\')">✏️</button>' +
+                '<button type="button" class="btn btn-red" style="padding:8px 10px; width:auto;" onclick="deleteSavedProfile(\'' + id + '\')">🗑️</button>';
             container.appendChild(row);
         });
     }
-
-    function testProfileVoice(id) {
-        const prof = globalProfiles[id];
-        if (!prof) return;
-        const spoken = getSpokenName(prof);
-        speakFrench("Allez " + spoken + ", à toi de jouer !", prof.name, false);
-    }
-
+    function testProfileVoice(id) { const prof = globalProfiles[id]; if (prof) speakFrench("Allez " + getSpokenName(prof) + ", à toi de jouer !", prof.name, false); }
     async function editProfilePhonetic(id) {
-        const prof = globalProfiles[id];
-        if (!prof) return;
-        const currentPhon = prof.phonetic || prof.name.toLowerCase();
-        const newPhon = prompt('Comment prononcer "' + prof.name + '" ? (ex: Kan-dalf)', currentPhon);
+        const prof = globalProfiles[id]; if (!prof) return;
+        const newPhon = prompt('Prononciation pour "' + prof.name + '" (ex: Kan-dalf) :', prof.phonetic || prof.name.toLowerCase());
         if (newPhon !== null) {
             prof.phonetic = newPhon.trim();
             localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
@@ -1206,57 +1126,34 @@
             await pushToGithub(false);
         }
     }
-
     async function deleteSavedProfile(id) {
         if (confirm("Supprimer ce profil ?")) {
-            delete globalProfiles[id];
-            localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-            renderExistingProfilesList();
-            await pushToGithub(true);
+            delete globalProfiles[id]; localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
+            renderExistingProfilesList(); await pushToGithub(true);
         }
     }
-
     async function createAndAddProfile() {
-        const input = document.getElementById('newProfileInput');
-        const phonInput = document.getElementById('newProfilePhonetic');
-        const rawName = input.value.trim();
-        if (!rawName) { alert("Saisissez un prénom !"); return; }
+        const input = document.getElementById('newProfileInput'); const phonInput = document.getElementById('newProfilePhonetic');
+        const rawName = input.value.trim(); if (!rawName) { alert("Saisissez un prénom !"); return; }
         const cleanName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-        const cleanPhon = phonInput.value.trim();
-
         const id = 'p' + Date.now();
-        globalProfiles[id] = {
-            name: cleanName,
-            phonetic: cleanPhon,
-            gamesPlayed: 0,
-            wins: 0,
-            totalPoints: 0,
-            totalDarts: 0
-        };
+        globalProfiles[id] = { name: cleanName, phonetic: phonInput.value.trim(), gamesPlayed: 0, wins: 0, totalPoints: 0, totalDarts: 0 };
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-        renderExistingProfilesList();
-        input.value = '';
-        phonInput.value = '';
-        log('👤 Profil créé : ' + cleanName);
+        renderExistingProfilesList(); input.value = ''; phonInput.value = '';
         await pushToGithub(false);
     }
-
     async function clearLocalProfilesOnly() {
         if (confirm("Vider le cache local et recharger depuis GitHub ?")) {
-            globalProfiles = {};
-            localStorage.removeItem('granboard_profiles');
-            await pullFromGithub(true);
-            renderExistingProfilesList();
+            globalProfiles = {}; localStorage.removeItem('granboard_profiles');
+            await pullFromGithub(true); renderExistingProfilesList();
         }
     }
 
-    // --- GITHUB SYNC ---
+    // --- GITHUB ---
     function updateGhBadge() {
         const el = document.getElementById('ghStatusDisplay');
-        if (!el) return;
-        el.textContent = (ghConfig.owner && ghConfig.repo && ghConfig.token) ? (ghConfig.owner + '/' + ghConfig.repo) : 'Non relié';
+        if (el) el.textContent = (ghConfig.owner && ghConfig.repo && ghConfig.token) ? (ghConfig.owner + '/' + ghConfig.repo) : 'Non relié';
     }
-
     function openGithubModal() {
         document.getElementById('ghOwnerInput').value = ghConfig.owner || '';
         document.getElementById('ghRepoInput').value = ghConfig.repo || '';
@@ -1264,106 +1161,77 @@
         document.getElementById('githubModal').style.display = 'flex';
     }
     function closeGithubModal() { document.getElementById('githubModal').style.display = 'none'; }
-
     async function saveGithubConfig() {
         ghConfig.owner = document.getElementById('ghOwnerInput').value.trim();
         ghConfig.repo  = document.getElementById('ghRepoInput').value.trim();
         ghConfig.token = document.getElementById('ghTokenInput').value.trim();
         localStorage.setItem('granboard_gh_config', JSON.stringify(ghConfig));
-        updateGhBadge();
-        closeGithubModal();
-        await pushToGithub(false);
+        updateGhBadge(); closeGithubModal(); await pushToGithub(false);
     }
-
     function copyMagicLink() {
         const owner = document.getElementById('ghOwnerInput').value.trim();
         const repo  = document.getElementById('ghRepoInput').value.trim();
         const token = document.getElementById('ghTokenInput').value.trim();
         if (!owner || !repo || !token) { alert("Remplissez les 3 champs !"); return; }
-        const encoded = btoa(owner + '|' + repo + '|' + token);
-        const magicUrl = window.location.origin + window.location.pathname + '?gh=' + encodeURIComponent(encoded);
-        navigator.clipboard?.writeText(magicUrl);
-        prompt("Copiez ce Lien Magique :", magicUrl);
+        const magicUrl = window.location.origin + window.location.pathname + '?gh=' + encodeURIComponent(btoa(owner + '|' + repo + '|' + token));
+        navigator.clipboard?.writeText(magicUrl); prompt("Copiez ce Lien Magique :", magicUrl);
     }
-
     function mergeProfiles(remoteProfiles) {
         if (!remoteProfiles || typeof remoteProfiles !== 'object') return;
         Object.keys(remoteProfiles).forEach(function(rId) {
-            const rProf = remoteProfiles[rId];
-            if (!rProf || !rProf.name) return;
-            const existingId = Object.keys(globalProfiles).find(function(lId) {
-                return globalProfiles[lId].name.toUpperCase() === rProf.name.toUpperCase();
-            });
-            if (!existingId) {
-                globalProfiles[rId] = rProf;
-            } else {
-                const lProf = globalProfiles[existingId];
-                if ((rProf.gamesPlayed || 0) >= (lProf.gamesPlayed || 0)) {
-                    globalProfiles[existingId] = Object.assign({}, lProf, rProf);
-                }
+            const rProf = remoteProfiles[rId]; if (!rProf || !rProf.name) return;
+            const existingId = Object.keys(globalProfiles).find(function(lId) { return globalProfiles[lId].name.toUpperCase() === rProf.name.toUpperCase(); });
+            if (!existingId) globalProfiles[rId] = rProf;
+            else if ((rProf.gamesPlayed || 0) >= (globalProfiles[existingId].gamesPlayed || 0)) {
+                globalProfiles[existingId] = Object.assign({}, globalProfiles[existingId], rProf);
             }
         });
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
     }
-
     async function pullFromGithub(replaceLocal) {
         if (!ghConfig.owner || !ghConfig.repo) return null;
-        const apiUrl = 'https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json?t=' + Date.now();
         const headers = { 'Accept': 'application/vnd.github+json' };
         if (ghConfig.token) headers['Authorization'] = 'Bearer ' + ghConfig.token;
         try {
-            const res = await fetch(apiUrl, { headers: headers, cache: 'no-store' });
+            const res = await fetch('https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json?t=' + Date.now(), { headers: headers, cache: 'no-store' });
             if (res.status === 200) {
                 const data = await res.json();
-                const jsonStr = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
-                const remoteProfiles = JSON.parse(jsonStr);
-                if (replaceLocal) {
-                    globalProfiles = remoteProfiles || {};
-                    localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-                } else {
-                    mergeProfiles(remoteProfiles);
-                }
-                renderExistingProfilesList();
-                return data.sha;
+                const remoteProfiles = JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\s/g, '')))));
+                if (replaceLocal) { globalProfiles = remoteProfiles || {}; localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles)); }
+                else mergeProfiles(remoteProfiles);
+                renderExistingProfilesList(); return data.sha;
             }
         } catch (e) {}
         return null;
     }
-
     async function pushToGithub(skipMerge) {
         if (!ghConfig.owner || !ghConfig.repo || !ghConfig.token) return;
         try {
             let currentSha = null;
             if (skipMerge) {
                 const resGet = await fetch('https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json?t=' + Date.now(), {
-                    headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + ghConfig.token },
-                    cache: 'no-store'
+                    headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + ghConfig.token }, cache: 'no-store'
                 });
                 if (resGet.status === 200) currentSha = (await resGet.json()).sha;
-            } else {
-                currentSha = await pullFromGithub(false);
-            }
-            const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(globalProfiles, null, 2))));
-            const bodyObj = { message: "Sync profils", content: contentBase64 };
+            } else currentSha = await pullFromGithub(false);
+            const bodyObj = { message: "Sync profils", content: btoa(unescape(encodeURIComponent(JSON.stringify(globalProfiles, null, 2)))) };
             if (currentSha) bodyObj.sha = currentSha;
             await fetch('https://api.github.com/repos/' + ghConfig.owner + '/' + ghConfig.repo + '/contents/profiles.json', {
-                method: 'PUT',
-                headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + ghConfig.token, 'Content-Type': 'application/json' },
+                method: 'PUT', headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + ghConfig.token, 'Content-Type': 'application/json' },
                 body: JSON.stringify(bodyObj)
             });
             log("✅ Synchronisé avec GitHub !");
         } catch (e) {}
     }
 
-    // --- STATISTIQUES ---
+    // --- STATS ---
     async function openStatsModal() {
         await pullFromGithub(false);
         document.getElementById('statsModal').style.display = 'flex';
         const leaderboard = document.getElementById('leaderboardContent');
         const ids = Object.keys(globalProfiles);
-        if (ids.length === 0) {
-            leaderboard.innerHTML = "Aucun profil.";
-        } else {
+        if (ids.length === 0) leaderboard.innerHTML = "Aucun profil.";
+        else {
             const sorted = ids.map(function(id) { return Object.assign({id: id}, globalProfiles[id]); })
                 .sort(function(a, b) { return (b.wins / Math.max(1, b.gamesPlayed)) - (a.wins / Math.max(1, a.gamesPlayed)); });
             let html = '';
@@ -1377,8 +1245,7 @@
             });
             leaderboard.innerHTML = html;
         }
-        const d1 = document.getElementById('duelP1');
-        const d2 = document.getElementById('duelP2');
+        const d1 = document.getElementById('duelP1'); const d2 = document.getElementById('duelP2');
         d1.innerHTML = ''; d2.innerHTML = '';
         ids.forEach(function(id) {
             const opt = document.createElement('option'); opt.value = id; opt.textContent = globalProfiles[id].name;
@@ -1387,34 +1254,18 @@
         if (ids.length >= 2) d2.selectedIndex = 1;
         updateDuelCompare();
     }
-
     function updateDuelCompare() {
-        const id1 = document.getElementById('duelP1').value;
-        const id2 = document.getElementById('duelP2').value;
+        const id1 = document.getElementById('duelP1').value; const id2 = document.getElementById('duelP2').value;
         const content = document.getElementById('duelGridContent');
-        if (!id1 || !id2 || id1 === id2) {
-            content.innerHTML = '<div style="grid-column: span 2; font-size:0.8rem; color:#94a3b8;">Sélectionnez deux joueurs différents.</div>';
-            return;
-        }
+        if (!id1 || !id2 || id1 === id2) { content.innerHTML = '<div style="grid-column: span 2; font-size:0.8rem; color:#94a3b8;">Sélectionnez deux joueurs différents.</div>'; return; }
         const p1 = globalProfiles[id1]; const p2 = globalProfiles[id2];
         const rate1 = p1.gamesPlayed > 0 ? Math.round((p1.wins / p1.gamesPlayed) * 100) : 0;
         const rate2 = p2.gamesPlayed > 0 ? Math.round((p2.wins / p2.gamesPlayed) * 100) : 0;
         const avg1 = p1.totalDarts > 0 ? ((p1.totalPoints / p1.totalDarts) * 3).toFixed(1) : '0.0';
         const avg2 = p2.totalDarts > 0 ? ((p2.totalPoints / p2.totalDarts) * 3).toFixed(1) : '0.0';
-
-        content.innerHTML = '<div class="comparison-card">' +
-                '<div style="font-weight:bold; color:var(--accent);">' + p1.name + '</div>' +
-                '<div style="font-size:1.2rem; font-weight:800; margin:4px 0;">' + rate1 + '%</div>' +
-                '<div style="font-size:0.7rem;">Victoires</div>' +
-                '<div style="font-size:0.95rem; font-weight:700; color:#38bdf8;">' + avg1 + ' pts</div>' +
-            '</div><div class="comparison-card">' +
-                '<div style="font-weight:bold; color:var(--primary);">' + p2.name + '</div>' +
-                '<div style="font-size:1.2rem; font-weight:800; margin:4px 0;">' + rate2 + '%</div>' +
-                '<div style="font-size:0.7rem;">Victoires</div>' +
-                '<div style="font-size:0.95rem; font-weight:700; color:#38bdf8;">' + avg2 + ' pts</div>' +
-            '</div>';
+        content.innerHTML = '<div class="comparison-card"><div style="font-weight:bold; color:var(--accent);">' + p1.name + '</div><div style="font-size:1.2rem; font-weight:800; margin:4px 0;">' + rate1 + '%</div><div style="font-size:0.7rem;">Victoires</div><div style="font-size:0.95rem; font-weight:700; color:#38bdf8;">' + avg1 + ' pts</div></div>' +
+            '<div class="comparison-card"><div style="font-weight:bold; color:var(--primary);">' + p2.name + '</div><div style="font-size:1.2rem; font-weight:800; margin:4px 0;">' + rate2 + '%</div><div style="font-size:0.7rem;">Victoires</div><div style="font-size:0.95rem; font-weight:700; color:#38bdf8;">' + avg2 + ' pts</div></div>';
     }
-
     function closeStatsModal() { document.getElementById('statsModal').style.display = 'none'; }
 
     // --- CORRECTION MANUELLE ---
@@ -1424,18 +1275,13 @@
         document.getElementById('scoreModal').style.display = 'flex';
     }
     function closeModal() { document.getElementById('scoreModal').style.display = 'none'; }
-    function confirmModalSelection(mult) {
-        const prefix = mult === 3 ? 'T' : (mult === 2 ? 'D' : 'S');
-        applyModalChoice(prefix + selectedNum, selectedNum, mult);
-    }
+    function confirmModalSelection(mult) { applyModalChoice((mult === 3 ? 'T' : (mult === 2 ? 'D' : 'S')) + selectedNum, selectedNum, mult); }
     function confirmSpecial(label, sector, mult) { applyModalChoice(label, sector, mult); }
     function applyModalChoice(label, sector, mult) {
         closeModal();
         if (modalMode === 'edit' && historyStack.length > 0) {
             const prev = historyStack.pop();
-            players = prev.players;
-            currentPlayer = prev.currentPlayer;
-            boardLocked = false;
+            players = prev.players; currentPlayer = prev.currentPlayer; boardLocked = false;
         }
         registerHit(label, sector, mult);
     }
@@ -1447,7 +1293,7 @@
 
     updateGhBadge();
     if (ghConfig.owner) pullFromGithub(false);
-    log("✅ Prêt ! Testez votre voix dans Réglages Voix.");
+    log("✅ Prêt ! Protocole LED GranBoard 3s + ElevenLabs intégrés.");
 </script>
 </body>
 </html>
