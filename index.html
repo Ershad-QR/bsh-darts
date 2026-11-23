@@ -171,12 +171,17 @@
             background: #0f172a; color: white; border: 1px solid #334155;
             padding: 10px; border-radius: 10px; font-weight: bold; font-size: 0.9rem; width: 100%;
         }
+        .voice-status {
+            margin-top: 8px; padding: 8px 10px; border-radius: 8px; font-size: 0.78rem;
+            font-weight: bold; display: none; word-break: break-word;
+        }
+        .voice-status.ok { display: block; background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid #10b981; }
+        .voice-status.err { display: block; background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid #ef4444; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <!-- En-tête Commun -->
     <div class="top-bar">
         <div style="font-weight:900; font-size:1.1rem;">🎯 BSH Dart Connect</div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -187,7 +192,7 @@
 
     <button type="button" class="btn btn-blue" id="btnConnect" onclick="connectGranBoard()">🔌 CONNECTER LA CIBLE BLUETOOTH</button>
 
-    <!-- ================= ÉCRAN 1 : ACCUEIL & CONFIGURATION ================= -->
+    <!-- ÉCRAN 1 : ACCUEIL -->
     <div id="screenSetup" class="screen active">
         <button type="button" class="btn btn-green" onclick="openStartGamePanel()" style="font-size:1.1rem; padding:18px;">🎮 DÉMARRER UNE PARTIE</button>
         <button type="button" class="btn btn-purple" onclick="openAddPlayerModal()">👤 PROFILS & PRONONCIATION</button>
@@ -196,7 +201,7 @@
         <button type="button" class="btn btn-dark" onclick="openGithubModal()">☁️ RELIER À GITHUB (<span id="ghStatusDisplay">Non relié</span>)</button>
     </div>
 
-    <!-- ================= ÉCRAN 2 : ARÈNE DE JEU ACTIVE ================= -->
+    <!-- ÉCRAN 2 : ARÈNE DE JEU -->
     <div id="screenGame" class="screen">
         <div class="shield-banner" id="shieldBanner">
             🛡️ CIBLE VERROUILLÉE (Retirez vos flèches sans risque !)<br>
@@ -228,49 +233,61 @@
     <div class="log-box" id="logs">Initialisation...</div>
 </div>
 
-<!-- MODALE : RÉGLAGES DE LA VOIX (ELEVENLABS / MP3 / SYSTÈME) -->
+<!-- MODALE : RÉGLAGES DE LA VOIX -->
 <div class="modal-bg" id="voiceModal">
     <div class="modal">
         <h3 style="margin:0 0 10px 0; color:var(--blue); text-align:center;">🎙️ Réglages de la Voix</h3>
 
         <label class="label-small">Moteur vocal actif :</label>
         <select id="voiceEngineSelect" onchange="toggleVoiceConfigFields()" style="margin-bottom:10px;">
-            <option value="elevenlabs">⭐ Voix IA Humaine (ElevenLabs - Ultra naturelle)</option>
-            <option value="mp3">🎵 Fichiers MP3 dans mon GitHub (dossier sounds/)</option>
-            <option value="browser">📱 Voix du téléphone (avec correction anti-sigle)</option>
+            <option value="elevenlabs">⭐ Voix IA Humaine (ElevenLabs)</option>
+            <option value="mp3">🎵 Fichiers MP3 dans mon GitHub (sounds/)</option>
+            <option value="browser">📱 Voix du téléphone</option>
         </select>
 
         <!-- Config ElevenLabs -->
         <div id="elevenConfigBox" class="stats-section" style="margin-top:0;">
-            <div class="stats-title">Voix Humaine ElevenLabs (10 000 car./mois gratuits)</div>
-            <label class="label-small">Clé API ElevenLabs (sk_...) :</label>
-            <input type="password" id="elApiKeyInput" class="input-text-modern" placeholder="Collez votre clé ElevenLabs">
-            <label class="label-small">ID de la Voix (par défaut : voix masculine grave) :</label>
-            <input type="text" id="elVoiceIdInput" class="input-text-modern" placeholder="pNInz6obpgDQGcFmaJgB">
-            <div style="font-size:0.72rem; color:#94a3b8;">💡 Les annonces déjà prononcées sont mises en cache automatiquement pour ne pas consommer vos crédits.</div>
+            <div class="stats-title">Voix Humaine ElevenLabs (Plan Gratuit)</div>
+            <label class="label-small">1. Clé API ElevenLabs (sk_...) :</label>
+            <input type="password" id="elApiKeyInput" class="input-text-modern" placeholder="Collez votre clé sk_...">
+
+            <label class="label-small">2. Choisissez une voix compatible Plan Gratuit :</label>
+            <div style="display:flex; gap:6px; margin:4px 0 8px 0;">
+                <select id="elPresetSelect" onchange="onSelectPresetVoice()" style="flex:1;">
+                    <option value="JBFqnCBsd6RMkjVDRZzb">🍺 George (Chaleureux, grave - Barman)</option>
+                    <option value="CwhRBWXzGAHq8TQ4Fs17">🎙️ Roger (Posé, voix de radio)</option>
+                    <option value="onwK4e9ZLuTAKqWW03F9">🧔 Daniel (Grave, autoritaire)</option>
+                    <option value="N2lVS1w4EtoT3dr4eOWO">🥃 Callum (Rauque, ambiance pub)</option>
+                    <option value="bIHbv24MWmeRgasZH58o">😄 Will (Amical, décontracté)</option>
+                    <option value="TX3LPaxmHKxFdv7VOQHJ">🎤 Liam (Dynamique)</option>
+                </select>
+                <button type="button" class="btn btn-dark" style="width:auto; padding:8px 10px; font-size:0.75rem;" onclick="loadMyElevenVoices()">🔄 Mes voix</button>
+            </div>
+
+            <label class="label-small">ID de voix actif (modifiable manuellement) :</label>
+            <input type="text" id="elVoiceIdInput" class="input-text-modern" placeholder="JBFqnCBsd6RMkjVDRZzb">
+            <div style="font-size:0.7rem; color:#94a3b8;">⚠️ Sur le plan gratuit, ElevenLabs bloque les voix communautaires via l'API : utilisez l'une des voix par défaut ci-dessus (qui parlent très bien français).</div>
         </div>
 
         <!-- Config MP3 -->
         <div id="mp3ConfigBox" class="stats-section" style="margin-top:0; display:none;">
             <div class="stats-title">Mode Fichiers MP3 (dossier sounds/)</div>
             <div style="font-size:0.78rem; color:#cbd5e1;">
-                Créez un dossier <code>sounds/</code> dans votre GitHub et déposez-y vos propres enregistrements :<br>
-                • <code>sounds/quendalf.mp3</code> (nom du profil en minuscules)<br>
-                • <code>sounds/bust.mp3</code>, <code>sounds/victoire.mp3</code>, <code>sounds/retrait.mp3</code><br>
-                • <code>sounds/s20.mp3</code>, <code>sounds/t20.mp3</code>, <code>sounds/bull.mp3</code>...
+                Déposez vos MP3 dans <code>sounds/</code> sur GitHub : <code>sounds/quendalf.mp3</code>, <code>sounds/bust.mp3</code>, <code>sounds/s20.mp3</code>...
             </div>
         </div>
 
         <!-- Config Navigateur -->
         <div id="browserConfigBox" class="stats-section" style="margin-top:0; display:none;">
-            <div class="stats-title">Choisir la meilleure voix du téléphone</div>
+            <div class="stats-title">Choisir la voix du téléphone</div>
             <select id="browserVoiceSelect"></select>
         </div>
 
         <div class="stats-section">
             <label class="label-small">Phrase de test :</label>
-            <input type="text" id="testPhraseInput" class="input-text-modern" value="Allez Quand dalf, à toi de jouer !">
+            <input type="text" id="testPhraseInput" class="input-text-modern" value="Allez Kan-dalf, à toi de jouer !">
             <button type="button" class="btn btn-orange" onclick="runVoiceTest()" style="padding:10px;">🔊 Tester la voix maintenant</button>
+            <div id="voiceTestStatus" class="voice-status"></div>
         </div>
 
         <div style="display:flex; gap:8px; margin-top:12px;">
@@ -284,7 +301,6 @@
 <div class="modal-bg" id="startGameModal">
     <div class="modal">
         <h3 style="margin:0 0 12px 0; color:var(--primary); text-align:center;">🎯 Lancer une partie</h3>
-        
         <div class="stats-section" style="margin-top:0;">
             <div class="stats-title">1. Mode de jeu & Options</div>
             <select id="gameMode" onchange="toggleOptionBox()">
@@ -293,7 +309,6 @@
                 <option value="cricket">Jeu : Cricket</option>
                 <option value="clock">Tour du Monde</option>
             </select>
-
             <div class="options-grid-check" id="doubleOptionsBox">
                 <div class="option-check-card" id="optDoubleIn" onclick="toggleOptionCheck('optDoubleIn')">
                     <span>Double In</span>
@@ -305,12 +320,10 @@
                 </div>
             </div>
         </div>
-
         <div class="stats-section">
             <div class="stats-title">2. Cocher les participants :</div>
             <div id="selectPlayersList" style="max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
         </div>
-
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:15px;">
             <button type="button" class="btn btn-green" onclick="confirmStartGame()">🚀 C'est parti !</button>
             <button type="button" class="btn btn-dark" onclick="closeStartGamePanel()">Retour</button>
@@ -318,28 +331,25 @@
     </div>
 </div>
 
-<!-- MODALE : AJOUTER / ÉDITER PRONONCIATION / SUPPRIMER UN PROFIL -->
+<!-- MODALE : PROFILS & PRONONCIATION -->
 <div class="modal-bg" id="addPlayerModal">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <h3 style="margin:0; color:var(--accent);">👤 Profils & Prononciation</h3>
             <button type="button" class="btn btn-red" style="padding:5px 10px; font-size:0.72rem; width:auto;" onclick="clearLocalProfilesOnly()">Purger cache</button>
         </div>
-        
         <div class="stats-section" style="margin-top:0;">
             <div class="stats-title">Profils existants (🔊 Tester | ✏️ Prononciation | 🗑️) :</div>
             <div id="existingProfilesList" style="display:flex; flex-direction:column; gap:6px; max-height:190px; overflow-y:auto;"></div>
         </div>
-
         <div class="stats-section">
             <div class="stats-title">Créer un nouveau profil :</div>
             <label class="label-small">Pseudo affiché à l'écran :</label>
             <input type="text" id="newProfileInput" class="input-text-modern" placeholder="Ex: Quendalf">
             <label class="label-small">Prononciation vocale (optionnel) :</label>
-            <input type="text" id="newProfilePhonetic" class="input-text-modern" placeholder="Ex: Quand dalf">
+            <input type="text" id="newProfilePhonetic" class="input-text-modern" placeholder="Ex: Kan-dalf">
             <button type="button" class="btn btn-green" onclick="createAndAddProfile()">✨ Sauvegarder le profil</button>
         </div>
-
         <button type="button" class="btn btn-dark" onclick="closeAddPlayerModal()" style="width:100%; margin-top:12px;">Fermer</button>
     </div>
 </div>
@@ -375,12 +385,10 @@
         <input type="text" id="ghRepoInput" class="input-text-modern" placeholder="Ex: bsh-darts">
         <label class="label-small">3. Votre clé Token GitHub :</label>
         <input type="password" id="ghTokenInput" class="input-text-modern" placeholder="github_pat_...">
-
         <div style="display:flex; gap:8px; margin-top:6px;">
             <button type="button" class="btn btn-green" onclick="saveGithubConfig()" style="flex:1;">💾 Connecter</button>
             <button type="button" class="btn btn-dark" onclick="closeGithubModal()">Fermer</button>
         </div>
-
         <div class="stats-section" style="margin-top:12px;">
             <button type="button" class="btn btn-blue" onclick="copyMagicLink()" style="width:100%; padding:10px; font-size:0.8rem;">🔗 Copier le Lien Magique PC ➔ Téléphone</button>
         </div>
@@ -442,11 +450,10 @@
     let isDoubleInChecked = false;
     let isDoubleOutChecked = false;
 
-    // Configuration Voix (ElevenLabs / MP3 / Navigateur)
     let voiceConfig = {
-        engine: 'browser',
+        engine: 'elevenlabs',
         elApiKey: '',
-        elVoiceId: 'pNInz6obpgDQGcFmaJgB', // Adam (voix masculine grave, multilingue FR)
+        elVoiceId: 'JBFqnCBsd6RMkjVDRZzb',
         browserVoiceName: ''
     };
     try {
@@ -454,8 +461,8 @@
         if (savedVoice) voiceConfig = Object.assign(voiceConfig, savedVoice);
     } catch(e) {}
 
-    // Cache audio en mémoire pour ne pas re-télécharger les mêmes phrases ElevenLabs
     const audioBlobCache = {};
+    let currentPlayingAudio = null;
 
     let ghConfig = { owner: '', repo: '', token: '' };
     try {
@@ -485,7 +492,7 @@
     try {
         globalProfiles = JSON.parse(localStorage.getItem('granboard_profiles')) || {
             "p1": { name: "Ershad", phonetic: "Ershad", wins: 0, gamesPlayed: 0, totalPoints: 0, totalDarts: 0 },
-            "p2": { name: "Quendalf", phonetic: "Quand dalf", wins: 0, gamesPlayed: 0, totalPoints: 0, totalDarts: 0 }
+            "p2": { name: "Quendalf", phonetic: "Kan-dalf", wins: 0, gamesPlayed: 0, totalPoints: 0, totalDarts: 0 }
         };
     } catch(e) {}
 
@@ -520,7 +527,7 @@
     }
 
     // ============================================================================
-    // 🎙️ SYSTÈME AUDIO & PRONONCIATION ANTI-ÉPELLATION
+    // 🎙️ MOTEUR VOCAL ELEVENLABS + DIAGNOSTIC CLAIR
     // ============================================================================
     let audioCtx = null;
     function getAudioCtx() {
@@ -557,71 +564,117 @@
         } catch(e) {}
     }
 
-    // Récupère la prononciation exacte d'un joueur (évite l'épellation des MAJUSCULES !)
     function getSpokenName(playerObj) {
         let prof = playerObj.profileId ? globalProfiles[playerObj.profileId] : playerObj;
         if (prof && prof.phonetic && prof.phonetic.trim() !== "") {
             return prof.phonetic.trim();
         }
-        // Si pas de prononciation définie, on force "Première lettre majuscule + reste en minuscules"
-        // pour empêcher le moteur vocal d'épeler le pseudo comme un sigle !
         const raw = (playerObj.name || "Joueur").trim().toLowerCase();
         return raw.charAt(0).toUpperCase() + raw.slice(1);
     }
 
-    async function speakFrench(phrase, mp3Key) {
-        if (!soundEnabled) return;
+    function showVoiceStatus(isOk, msg) {
+        const el = document.getElementById('voiceTestStatus');
+        if (!el) return;
+        el.className = 'voice-status ' + (isOk ? 'ok' : 'err');
+        el.textContent = msg;
+    }
 
-        // 1. Mode MP3 GitHub (sounds/<mp3Key>.mp3)
+    async function speakFrench(phrase, mp3Key, isManualTest) {
+        if (!soundEnabled && !isManualTest) return;
+
+        if (currentPlayingAudio) {
+            try { currentPlayingAudio.pause(); } catch(e) {}
+        }
+
+        // 1. Mode MP3 GitHub
         if (voiceConfig.engine === 'mp3' && mp3Key) {
             const cleanKey = mp3Key.toLowerCase().replace(/[^a-z0-9]/g, '');
             try {
                 const audio = new Audio('sounds/' + cleanKey + '.mp3');
+                currentPlayingAudio = audio;
                 await audio.play();
+                if (isManualTest) showVoiceStatus(true, "✅ Fichier sounds/" + cleanKey + ".mp3 lu !");
                 return;
             } catch(e) {
-                log("ℹ️ MP3 introuvable (sounds/" + cleanKey + ".mp3), bascule vocale.");
+                if (isManualTest) {
+                    showVoiceStatus(false, "❌ Fichier sounds/" + cleanKey + ".mp3 introuvable sur votre GitHub.");
+                    return;
+                }
             }
         }
 
-        // 2. Mode Voix IA Humaine ElevenLabs (avec cache mémoire)
-        if (voiceConfig.engine === 'elevenlabs' && voiceConfig.elApiKey) {
-            try {
-                if (audioBlobCache[phrase]) {
-                    const cachedAudio = new Audio(audioBlobCache[phrase]);
-                    cachedAudio.play();
+        // 2. Mode Voix IA Humaine ElevenLabs
+        if (voiceConfig.engine === 'elevenlabs') {
+            if (!voiceConfig.elApiKey) {
+                if (isManualTest) {
+                    showVoiceStatus(false, "❌ Collez d'abord votre clé API ElevenLabs (sk_...) ci-dessus !");
                     return;
                 }
-                const vId = voiceConfig.elVoiceId || 'pNInz6obpgDQGcFmaJgB';
-                const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + vId, {
-                    method: 'POST',
-                    headers: {
-                        'xi-api-key': voiceConfig.elApiKey,
-                        'Content-Type': 'application/json',
-                        'Accept': 'audio/mpeg'
-                    },
-                    body: JSON.stringify({
-                        text: phrase,
-                        model_id: 'eleven_multilingual_v2',
-                        voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.35 }
-                    })
-                });
-                if (res.ok) {
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    audioBlobCache[phrase] = url;
-                    const a = new Audio(url);
-                    a.play();
-                    return;
-                } else {
-                    log("⚠️ Clé ElevenLabs refusée (code " + res.status + "), bascule voix téléphone.");
+            } else {
+                const vId = (voiceConfig.elVoiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
+                const cacheKey = vId + '|' + phrase;
+                try {
+                    if (audioBlobCache[cacheKey]) {
+                        const cachedAudio = new Audio(audioBlobCache[cacheKey]);
+                        currentPlayingAudio = cachedAudio;
+                        await cachedAudio.play();
+                        if (isManualTest) showVoiceStatus(true, "✅ Voix ElevenLabs jouée (depuis le cache) !");
+                        return;
+                    }
+                    if (isManualTest) showVoiceStatus(true, "⏳ Génération de la voix ElevenLabs en cours...");
+                    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(vId), {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': voiceConfig.elApiKey.trim(),
+                            'Content-Type': 'application/json',
+                            'Accept': 'audio/mpeg'
+                        },
+                        body: JSON.stringify({
+                            text: phrase,
+                            model_id: 'eleven_flash_v2_5',
+                            language_code: 'fr',
+                            voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.25 }
+                        })
+                    });
+
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        audioBlobCache[cacheKey] = url;
+                        const a = new Audio(url);
+                        currentPlayingAudio = a;
+                        await a.play();
+                        if (isManualTest) showVoiceStatus(true, "✅ Voix ElevenLabs jouée avec succès !");
+                        return;
+                    } else {
+                        let detailMsg = "Erreur HTTP " + res.status;
+                        try {
+                            const errJson = await res.json();
+                            if (errJson.detail && errJson.detail.message) detailMsg = errJson.detail.message;
+                            else if (typeof errJson.detail === 'string') detailMsg = errJson.detail;
+                        } catch(e) {}
+                        log("⚠️ ElevenLabs (" + res.status + ") : " + detailMsg);
+                        if (isManualTest) {
+                            if (res.status === 402 || detailMsg.includes('library voices')) {
+                                showVoiceStatus(false, "❌ Refus ElevenLabs (Plan Gratuit) : cette voix communautaire est payante via l'API. Choisissez une voix par défaut dans la liste déroulante (ex: George, Roger, Daniel) !");
+                            } else {
+                                showVoiceStatus(false, "❌ Refus ElevenLabs (" + res.status + ") : " + detailMsg);
+                            }
+                            return; // Ne bascule PAS sur la voix robot pendant le test !
+                        }
+                    }
+                } catch(e) {
+                    log("⚠️ Erreur réseau ElevenLabs : " + e.message);
+                    if (isManualTest) {
+                        showVoiceStatus(false, "❌ Erreur réseau : " + e.message);
+                        return;
+                    }
                 }
-            } catch(e) {
-                log("⚠️ Erreur ElevenLabs : " + e.message);
             }
         }
 
-        // 3. Mode Voix du téléphone (nettoyée contre les sigles)
+        // 3. Mode Voix du téléphone
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         setTimeout(function() {
@@ -641,6 +694,7 @@
             u.pitch = 0.90;
             u.rate  = 1.02;
             window.speechSynthesis.speak(u);
+            if (isManualTest) showVoiceStatus(true, "📱 Voix du téléphone jouée.");
         }, 60);
     }
 
@@ -651,14 +705,58 @@
 
     // --- MODALE RÉGLAGES VOIX ---
     function openVoiceModal() {
-        document.getElementById('voiceEngineSelect').value = voiceConfig.engine || 'browser';
+        document.getElementById('voiceEngineSelect').value = voiceConfig.engine || 'elevenlabs';
         document.getElementById('elApiKeyInput').value = voiceConfig.elApiKey || '';
-        document.getElementById('elVoiceIdInput').value = voiceConfig.elVoiceId || 'pNInz6obpgDQGcFmaJgB';
+        document.getElementById('elVoiceIdInput').value = voiceConfig.elVoiceId || 'JBFqnCBsd6RMkjVDRZzb';
+        const presetSel = document.getElementById('elPresetSelect');
+        for (let i = 0; i < presetSel.options.length; i++) {
+            if (presetSel.options[i].value === voiceConfig.elVoiceId) presetSel.selectedIndex = i;
+        }
+        document.getElementById('voiceTestStatus').className = 'voice-status';
         populateBrowserVoices();
         toggleVoiceConfigFields();
         document.getElementById('voiceModal').style.display = 'flex';
     }
     function closeVoiceModal() { document.getElementById('voiceModal').style.display = 'none'; }
+
+    function onSelectPresetVoice() {
+        const val = document.getElementById('elPresetSelect').value;
+        if (val) document.getElementById('elVoiceIdInput').value = val;
+    }
+
+    async function loadMyElevenVoices() {
+        const key = document.getElementById('elApiKeyInput').value.trim();
+        if (!key) {
+            showVoiceStatus(false, "❌ Collez d'abord votre clé API sk_... avant de charger vos voix.");
+            return;
+        }
+        try {
+            showVoiceStatus(true, "⏳ Chargement des voix autorisées sur votre compte...");
+            const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+                headers: { 'xi-api-key': key }
+            });
+            if (!res.ok) {
+                showVoiceStatus(false, "❌ Impossible de lire les voix (code " + res.status + "). Vérifiez votre clé API.");
+                return;
+            }
+            const data = await res.json();
+            const sel = document.getElementById('elPresetSelect');
+            sel.innerHTML = '';
+            const voicesList = data.voices || Array.of();
+            voicesList.forEach(function(v) {
+                const opt = document.createElement('option');
+                opt.value = v.voice_id;
+                opt.textContent = v.name + ' (' + (v.category || 'premade') + ')';
+                sel.appendChild(opt);
+            });
+            if (voicesList.length > 0) {
+                document.getElementById('elVoiceIdInput').value = voicesList.at(0).voice_id;
+                showVoiceStatus(true, "✅ " + voicesList.length + " voix chargées depuis votre compte ElevenLabs !");
+            }
+        } catch(e) {
+            showVoiceStatus(false, "❌ Erreur : " + e.message);
+        }
+    }
 
     function populateBrowserVoices() {
         const sel = document.getElementById('browserVoiceSelect');
@@ -682,23 +780,24 @@
         document.getElementById('browserConfigBox').style.display = eng === 'browser' ? 'block' : 'none';
     }
 
-    function saveVoiceConfig() {
+    function syncVoiceInputsToConfig() {
         voiceConfig.engine = document.getElementById('voiceEngineSelect').value;
         voiceConfig.elApiKey = document.getElementById('elApiKeyInput').value.trim();
-        voiceConfig.elVoiceId = document.getElementById('elVoiceIdInput').value.trim() || 'pNInz6obpgDQGcFmaJgB';
+        voiceConfig.elVoiceId = document.getElementById('elVoiceIdInput').value.trim() || 'JBFqnCBsd6RMkjVDRZzb';
         voiceConfig.browserVoiceName = document.getElementById('browserVoiceSelect').value;
         localStorage.setItem('granboard_voice_config', JSON.stringify(voiceConfig));
+    }
+
+    function saveVoiceConfig() {
+        syncVoiceInputsToConfig();
         log("🎙️ Réglages voix enregistrés (" + voiceConfig.engine + ").");
         closeVoiceModal();
     }
 
     function runVoiceTest() {
-        voiceConfig.engine = document.getElementById('voiceEngineSelect').value;
-        voiceConfig.elApiKey = document.getElementById('elApiKeyInput').value.trim();
-        voiceConfig.elVoiceId = document.getElementById('elVoiceIdInput').value.trim() || 'pNInz6obpgDQGcFmaJgB';
-        voiceConfig.browserVoiceName = document.getElementById('browserVoiceSelect').value;
-        const txt = document.getElementById('testPhraseInput').value.trim() || "Allez Quand dalf, à toi !";
-        speakFrench(txt, 'test');
+        syncVoiceInputsToConfig();
+        const txt = document.getElementById('testPhraseInput').value.trim() || "Allez Kan-dalf, à toi de jouer !";
+        speakFrench(txt, 'test', true);
     }
 
     // --- CONNEXION BLUETOOTH ---
@@ -724,7 +823,7 @@
             document.getElementById('bleBadge').classList.add('ok');
             document.getElementById('btnConnect').style.display = 'none';
             log("✅ Cible Gran Board 3s connectée et prête !");
-            speakFrench("Cible connectée. Bon jeu !", "connect");
+            speakFrench("Cible connectée. Bon jeu !", "connect", false);
 
             char.addEventListener('characteristicvaluechanged', function(event) {
                 const val = event.target.value;
@@ -767,7 +866,7 @@
         }
     }
 
-    // --- ÉCRAN 1 : CONFIGURATION & DÉMARRAGE DE PARTIE ---
+    // --- CONFIGURATION & DÉMARRAGE DE PARTIE ---
     function openStartGamePanel() {
         const selectContainer = document.getElementById('selectPlayersList');
         selectContainer.innerHTML = '';
@@ -823,10 +922,7 @@
             });
         });
 
-        if (players.length === 0) {
-            alert("Veuillez cocher au moins un joueur !");
-            return;
-        }
+        if (players.length === 0) { alert("Veuillez cocher au moins un joueur !"); return; }
 
         closeStartGamePanel();
         document.getElementById('screenSetup').classList.remove('active');
@@ -840,7 +936,7 @@
         updateLockUI();
         renderUI();
         const firstSpoken = getSpokenName(players[currentPlayer]);
-        speakFrench("C'est parti ! " + firstSpoken + ", à toi de jouer.", players[currentPlayer].name);
+        speakFrench("C'est parti ! " + firstSpoken + ", à toi de jouer.", players[currentPlayer].name, false);
         log("🎮 Partie lancée : " + mode);
     }
 
@@ -866,7 +962,7 @@
         if (label === 'BULL') verbalLabel = 'Bulle';
         if (label === 'D-BULL') verbalLabel = 'Double Bulle';
         if (label === 'MISS') verbalLabel = 'Raté';
-        speakFrench(verbalLabel, label);
+        speakFrench(verbalLabel, label, false);
 
         if (sector > 0) {
             p.stats.totalPoints += pts;
@@ -888,7 +984,7 @@
             } else {
                 p.darts.push(label);
                 if (newScore < 0 || (newScore === 1 && isDoubleOutChecked)) {
-                    speakFrench("Ah, ça dépasse !", "bust");
+                    speakFrench("Ah, ça dépasse !", "bust", false);
                     const dartsCount = p.darts.length - 1;
                     if (dartsCount > 0 && historyStack.length >= dartsCount) {
                         p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
@@ -896,14 +992,14 @@
                     boardLocked = true;
                 } else if (newScore === 0) {
                     if (isDoubleOutChecked && mult !== 2 && sector !== 25) {
-                        speakFrench("Il faut finir sur un double !", "bust");
+                        speakFrench("Il faut finir sur un double !", "bust", false);
                         const dartsCount = p.darts.length - 1;
                         p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
                         boardLocked = true;
                     } else {
                         won = true;
                         p.score = 0;
-                        speakFrench("Et c'est gagné pour " + spokenName + " ! Tournée générale !", "victoire");
+                        speakFrench("Et c'est gagné pour " + spokenName + " ! Tournée générale !", "victoire", false);
                         await handleWin(p);
                         setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
                     }
@@ -917,7 +1013,7 @@
                 p.score += 1;
                 if (p.score > 20) {
                     won = true;
-                    speakFrench("Partie gagnée pour " + spokenName + " !", "victoire");
+                    speakFrench("Partie gagnée pour " + spokenName + " !", "victoire", false);
                     await handleWin(p);
                     setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
                 }
@@ -940,7 +1036,7 @@
 
         if (p.darts.length >= 3) {
             boardLocked = true;
-            if (!won) speakFrench("C'est bon, retirez vos flèches.", "retrait");
+            if (!won) speakFrench("C'est bon, retirez vos flèches.", "retrait", false);
         }
 
         document.getElementById('lastHitText').textContent = label + ' (' + pts + ' pts)';
@@ -955,9 +1051,7 @@
                 prof.gamesPlayed = (prof.gamesPlayed || 0) + 1;
                 prof.totalPoints = (prof.totalPoints || 0) + p.stats.totalPoints;
                 prof.totalDarts = (prof.totalDarts || 0) + p.stats.totalDarts;
-                if (p.profileId === winningPlayer.profileId) {
-                    prof.wins = (prof.wins || 0) + 1;
-                }
+                if (p.profileId === winningPlayer.profileId) prof.wins = (prof.wins || 0) + 1;
             }
         });
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
@@ -985,15 +1079,12 @@
         boardLocked = false;
         manualLock = false;
         const nextSpoken = getSpokenName(players[currentPlayer]);
-        speakFrench("Allez " + nextSpoken + ", à toi !", players[currentPlayer].name);
+        speakFrench("Allez " + nextSpoken + ", à toi !", players[currentPlayer].name, false);
         updateLockUI();
         renderUI();
     }
 
-    function toggleManualLock() {
-        manualLock = !manualLock;
-        updateLockUI();
-    }
+    function toggleManualLock() { manualLock = !manualLock; updateLockUI(); }
 
     function updateLockUI() {
         const isLocked = boardLocked || manualLock;
@@ -1010,12 +1101,7 @@
         renderUI();
     }
 
-    function selectPlayer(idx) {
-        currentPlayer = idx;
-        boardLocked = false;
-        updateLockUI();
-        renderUI();
-    }
+    function selectPlayer(idx) { currentPlayer = idx; boardLocked = false; updateLockUI(); renderUI(); }
 
     function formatCricketMarks(count) {
         if (count === 0) return '-';
@@ -1086,7 +1172,6 @@
         const ids = Object.keys(globalProfiles);
         ids.forEach(function(id) {
             const prof = globalProfiles[id];
-            const spokenPreview = prof.phonetic ? ' (« ' + prof.phonetic + ' »)' : '';
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.gap = '5px';
@@ -1105,19 +1190,19 @@
         const prof = globalProfiles[id];
         if (!prof) return;
         const spoken = getSpokenName(prof);
-        speakFrench("Allez " + spoken + ", à toi de jouer !", prof.name);
+        speakFrench("Allez " + spoken + ", à toi de jouer !", prof.name, false);
     }
 
     async function editProfilePhonetic(id) {
         const prof = globalProfiles[id];
         if (!prof) return;
         const currentPhon = prof.phonetic || prof.name.toLowerCase();
-        const newPhon = prompt('Comment prononcer "' + prof.name + '" ? (ex: Quand dalf)', currentPhon);
+        const newPhon = prompt('Comment prononcer "' + prof.name + '" ? (ex: Kan-dalf)', currentPhon);
         if (newPhon !== null) {
             prof.phonetic = newPhon.trim();
             localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
             renderExistingProfilesList();
-            speakFrench(getSpokenName(prof), prof.name);
+            speakFrench(getSpokenName(prof), prof.name, false);
             await pushToGithub(false);
         }
     }
@@ -1136,7 +1221,6 @@
         const phonInput = document.getElementById('newProfilePhonetic');
         const rawName = input.value.trim();
         if (!rawName) { alert("Saisissez un prénom !"); return; }
-        // On conserve la casse naturelle (ex: "Quendalf" au lieu de "QUENDALF")
         const cleanName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
         const cleanPhon = phonInput.value.trim();
 
@@ -1363,7 +1447,7 @@
 
     updateGhBadge();
     if (ghConfig.owner) pullFromGithub(false);
-    log("✅ Prêt ! Cliquez sur Profils & Prononciation ou Réglages Voix.");
+    log("✅ Prêt ! Testez votre voix dans Réglages Voix.");
 </script>
 </body>
 </html>
