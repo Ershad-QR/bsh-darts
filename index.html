@@ -228,25 +228,42 @@
         </select>
 
         <div id="elevenConfigBox" class="stats-section" style="margin-top:0;">
-            <div class="stats-title">Voix Humaine ElevenLabs (Plan Gratuit)</div>
+            <div class="stats-title">19 Voix Gratuites ElevenLabs (Hommes & Femmes)</div>
             <label class="label-small">1. Clé API ElevenLabs (sk_...) :</label>
             <input type="password" id="elApiKeyInput" class="input-text-modern" placeholder="Collez votre clé sk_...">
 
-            <label class="label-small">2. Choisissez une voix compatible Plan Gratuit :</label>
+            <label class="label-small">2. Choisissez une voix gratuite :</label>
             <div style="display:flex; gap:6px; margin:4px 0 8px 0;">
                 <select id="elPresetSelect" onchange="onSelectPresetVoice()" style="flex:1;">
-                    <option value="JBFqnCBsd6RMkjVDRZzb">🍺 George (Chaleureux, grave - Barman)</option>
-                    <option value="CwhRBWXzGAHq8TQ4Fs17">🎙️ Roger (Posé, voix de radio)</option>
-                    <option value="onwK4e9ZLuTAKqWW03F9">🧔 Daniel (Grave, autoritaire)</option>
-                    <option value="N2lVS1w4EtoT3dr4eOWO">🥃 Callum (Rauque, ambiance pub)</option>
-                    <option value="bIHbv24MWmeRgasZH58o">😄 Will (Amical, décontracté)</option>
-                    <option value="TX3LPaxmHKxFdv7VOQHJ">🎤 Liam (Dynamique)</option>
+                    <optgroup label="🧔 Voix Masculines (Gratuites)">
+                        <option value="gOupLcAkjEnguROwi4oS">🍺 Darian — Chaleureux et posé</option>
+                        <option value="6WwXjDDEMyNmFG95zycZ">🎙️ Eldrin — Baryton grave et clair</option>
+                        <option value="fs2OqxduwXgp9foh2xjK">🥃 Callum — Rauque, ambiance pub</option>
+                        <option value="7QN34D2r3hCNwbOYIeK0">😎 Warren — Décontracté et cool</option>
+                        <option value="l7kNoIfnJKPg7779LI2t">😄 Eddie — Naturel et amical</option>
+                        <option value="fnYMz3F5gMEDGMWcH1ex">📢 Finley — Speaker articulé</option>
+                        <option value="FrS6cKLB1wg4WYgPa9GW">🧙 Wyatt — Grave et expérimenté</option>
+                        <option value="8dEUmyPMdDdK91vboYih">🌙 Sawyer — Conteur posé</option>
+                        <option value="jSuBIjxMKhqIfb0wCK1F">🎯 Baxter — Calme et pince-sans-rire</option>
+                        <option value="AaOhDHYJ1XLZk74lXhdE">🤝 Caleb — Confiant et rassurant</option>
+                        <option value="ktkP7Nsj67dw2zcplQYt">⚡ Lawrence — Dynamique et clair</option>
+                        <option value="10NkTYmU7tSz3Kkl3Lex">🔥 Kaelen — Jeune et énergique</option>
+                    </optgroup>
+                    <optgroup label="👩 Voix Féminines & Neutres (Gratuites)">
+                        <option value="OZ0L6eISlOejga3XjDFt">🌸 Talia — Douce et chaleureuse</option>
+                        <option value="g7LVvkPWALzPxOQbF6OE">✨ Jade — Naturelle et dynamique</option>
+                        <option value="QtY3JBOUKEB5xzrRfOKc">😊 Maisie — Amicale et décontractée</option>
+                        <option value="WQP7cQUF5aAS6Axh5yaa">🎙️ Elara — Nette et professionnelle</option>
+                        <option value="BFd5oBc2DDna33pSi4Gf">📺 Alicia — Présentatrice élégante</option>
+                        <option value="22N9cF8z0o7y23njdyaY">🎭 Florence — Posée et expressive</option>
+                        <option value="dvbL7qkNGZY1IqPGZAjM">🌟 Elowen — Moderne et enjouée</option>
+                    </optgroup>
                 </select>
-                <button type="button" class="btn btn-dark" style="width:auto; padding:8px 10px; font-size:0.75rem;" onclick="loadMyElevenVoices()">🔄 Mes voix</button>
+                <button type="button" class="btn btn-dark" style="width:auto; padding:8px 10px; font-size:0.75rem;" onclick="loadMyElevenVoices()">🔄 Sync</button>
             </div>
 
             <label class="label-small">ID de voix actif :</label>
-            <input type="text" id="elVoiceIdInput" class="input-text-modern" placeholder="JBFqnCBsd6RMkjVDRZzb">
+            <input type="text" id="elVoiceIdInput" class="input-text-modern" placeholder="gOupLcAkjEnguROwi4oS">
         </div>
 
         <div id="mp3ConfigBox" class="stats-section" style="margin-top:0; display:none;">
@@ -397,7 +414,6 @@
     const GRAN_NOTIFY  = '442f1571-8a00-9a28-cbe1-e1d4212d53eb';
     const GRAN_WRITE   = '442f1572-8a00-9a28-cbe1-e1d4212d53eb';
     const CRICKET_NUMS = Array.of(20, 19, 18, 17, 16, 15, 25);
-    // Ordre horaire d'une cible de fléchettes pour calculer la position LED autour de l'anneau (20 = 0x19)
     const CLOCKWISE_SECTORS = Array.of(20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5);
 
     const segmentMap = {
@@ -437,7 +453,7 @@
     let voiceConfig = {
         engine: 'elevenlabs',
         elApiKey: '',
-        elVoiceId: 'JBFqnCBsd6RMkjVDRZzb',
+        elVoiceId: 'gOupLcAkjEnguROwi4oS',
         browserVoiceName: ''
     };
     try {
@@ -510,9 +526,7 @@
         }
     }
 
-    // ============================================================================
-    // 💡 VRAI PROTOCOLE LED GRAN BOARD 3S (EXTRAIT DE VOTRE CAPTURE BTSNOOP !)
-    // ============================================================================
+    // --- PROTOCOLE LED GRAN BOARD 3S ---
     async function sendLedPacket(byteArr) {
         if (!granWriteChar) return;
         try {
@@ -522,46 +536,36 @@
             } else {
                 await granWriteChar.writeValue(data);
             }
-        } catch(e) {
-            log("⚠️ LED write : " + e.message);
-        }
+        } catch(e) { log("⚠️ LED write : " + e.message); }
     }
 
-    // Commande officielle d'extinction totale (01 00 ... 01)
     async function turnOffBoardLeds() {
         if (ledOffTimer) { clearTimeout(ledOffTimer); ledOffTimer = null; }
         await sendLedPacket(Array.of(0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01));
     }
 
-    // Calcule l'index LED autour de la cible (Secteur 20 = 0x19 = 25 dans votre capture)
     function getLedPosForSector(sector) {
         const idx = CLOCKWISE_SECTORS.indexOf(sector);
         if (idx === -1) return 0x19;
         return (25 + idx * 3) % 60;
     }
 
-    // Flash lumineux officiel à l'impact, puis extinction totale automatique pour 0 chauffe !
     async function playBoardLedHit(sector, mult, isTonPlus) {
         if (!granWriteChar) return;
         if (ledOffTimer) { clearTimeout(ledOffTimer); ledOffTimer = null; }
 
         if (isTonPlus) {
-            // Animation officielle 100+ points (Low Ton) capturée !
             await sendLedPacket(Array.of(0x11, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x0D, 0x00, 0x05, 0x02, 0x00, 0x01));
             ledOffTimer = setTimeout(turnOffBoardLeds, 2400);
             return;
         }
-
         if (sector === 25 && mult === 2) {
-            // Double Bull (0x1F) capturé !
             await sendLedPacket(Array.of(0x1F, 0x7D, 0x0A, 0x4A, 0x7D, 0x0A, 0x4A, 0xFC, 0x16, 0x62, 0x02, 0x00, 0x23, 0x01, 0x00, 0x01));
             ledOffTimer = setTimeout(turnOffBoardLeds, 1600);
         } else if (sector === 25) {
-            // Simple Bull (0x18) capturé !
             await sendLedPacket(Array.of(0x18, 0x7D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x01));
             ledOffTimer = setTimeout(turnOffBoardLeds, 1200);
         } else if (sector >= 1 && sector <= 20) {
-            // Simple (0x01), Double (0x02) ou Triple (0x03) capturé !
             const pos = getLedPosForSector(sector);
             const r = (currentPlayer % 2 === 0) ? 0x7D : 0x00;
             const g = (currentPlayer % 2 === 1) ? 0x7D : 0x00;
@@ -575,14 +579,11 @@
     async function playBoardLedNextTurn() {
         if (!granWriteChar) return;
         if (ledOffTimer) { clearTimeout(ledOffTimer); ledOffTimer = null; }
-        // Animation officielle de changement de tour capturée !
         await sendLedPacket(Array.of(0x11, 0x7D, 0x00, 0x00, 0x00, 0x7D, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x05, 0x00, 0x00, 0x01));
         ledOffTimer = setTimeout(turnOffBoardLeds, 1000);
     }
 
-    // ============================================================================
-    // 🎙️ MOTEUR VOCAL ELEVENLABS + DIAGNOSTIC CLAIR
-    // ============================================================================
+    // --- MOTEUR VOCAL ---
     let audioCtx = null;
     function getAudioCtx() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -593,22 +594,13 @@
     function playDartPocSound() {
         if (!soundEnabled) return;
         try {
-            const ctx = getAudioCtx();
-            const now = ctx.currentTime;
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(800, now);
-            osc1.frequency.exponentialRampToValueAtTime(100, now + 0.03);
-            gain1.gain.setValueAtTime(0.3, now);
-            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(140, now + 0.005);
-            osc2.frequency.exponentialRampToValueAtTime(45, now + 0.06);
-            gain2.gain.setValueAtTime(0.5, now + 0.005);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+            const ctx = getAudioCtx(); const now = ctx.currentTime;
+            const osc1 = ctx.createOscillator(); const gain1 = ctx.createGain();
+            osc1.type = 'sine'; osc1.frequency.setValueAtTime(800, now); osc1.frequency.exponentialRampToValueAtTime(100, now + 0.03);
+            gain1.gain.setValueAtTime(0.3, now); gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+            const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
+            osc2.type = 'sine'; osc2.frequency.setValueAtTime(140, now + 0.005); osc2.frequency.exponentialRampToValueAtTime(45, now + 0.06);
+            gain2.gain.setValueAtTime(0.5, now + 0.005); gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
             osc1.connect(gain1); gain1.connect(ctx.destination);
             osc2.connect(gain2); gain2.connect(ctx.destination);
             osc1.start(now); osc1.stop(now + 0.035);
@@ -651,17 +643,17 @@
             if (!voiceConfig.elApiKey) {
                 if (isManualTest) { showVoiceStatus(false, "❌ Collez d'abord votre clé API ElevenLabs (sk_...) !"); return; }
             } else {
-                const vId = (voiceConfig.elVoiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
+                const vId = (voiceConfig.elVoiceId || 'gOupLcAkjEnguROwi4oS').trim();
                 const cacheKey = vId + '|' + phrase;
                 try {
                     if (audioBlobCache[cacheKey]) {
                         const cachedAudio = new Audio(audioBlobCache[cacheKey]);
                         currentPlayingAudio = cachedAudio;
                         await cachedAudio.play();
-                        if (isManualTest) showVoiceStatus(true, "✅ Voix ElevenLabs jouée (depuis le cache) !");
+                        if (isManualTest) showVoiceStatus(true, "✅ Voix ElevenLabs jouée (cache) !");
                         return;
                     }
-                    if (isManualTest) showVoiceStatus(true, "⏳ Génération de la voix ElevenLabs en cours...");
+                    if (isManualTest) showVoiceStatus(true, "⏳ Génération ElevenLabs en cours...");
                     const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(vId), {
                         method: 'POST',
                         headers: {
@@ -693,11 +685,7 @@
                         } catch(e) {}
                         log("⚠️ ElevenLabs (" + res.status + ") : " + detailMsg);
                         if (isManualTest) {
-                            if (res.status === 402 || detailMsg.includes('library voices')) {
-                                showVoiceStatus(false, "❌ Voix communautaire payante sur Plan Gratuit : sélectionnez George, Roger, Daniel ou Callum dans la liste !");
-                            } else {
-                                showVoiceStatus(false, "❌ Refus ElevenLabs (" + res.status + ") : " + detailMsg);
-                            }
+                            showVoiceStatus(false, "❌ Refus ElevenLabs (" + res.status + ") : " + detailMsg);
                             return;
                         }
                     }
@@ -729,7 +717,11 @@
     function openVoiceModal() {
         document.getElementById('voiceEngineSelect').value = voiceConfig.engine || 'elevenlabs';
         document.getElementById('elApiKeyInput').value = voiceConfig.elApiKey || '';
-        document.getElementById('elVoiceIdInput').value = voiceConfig.elVoiceId || 'JBFqnCBsd6RMkjVDRZzb';
+        document.getElementById('elVoiceIdInput').value = voiceConfig.elVoiceId || 'gOupLcAkjEnguROwi4oS';
+        const sel = document.getElementById('elPresetSelect');
+        for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === voiceConfig.elVoiceId) sel.selectedIndex = i;
+        }
         document.getElementById('voiceTestStatus').className = 'voice-status';
         populateBrowserVoices(); toggleVoiceConfigFields();
         document.getElementById('voiceModal').style.display = 'flex';
@@ -749,12 +741,14 @@
             sel.innerHTML = '';
             (data.voices || Array.of()).forEach(function(v) {
                 const opt = document.createElement('option');
-                opt.value = v.voice_id; opt.textContent = v.name + ' (' + (v.category || 'premade') + ')';
+                opt.value = v.voice_id;
+                const gender = (v.labels && v.labels.gender) ? (v.labels.gender === 'female' ? '👩 ' : '🧔 ') : '🎙️ ';
+                opt.textContent = gender + v.name + ' (' + (v.category || 'default') + ')';
                 sel.appendChild(opt);
             });
             if (sel.options.length > 0) {
                 document.getElementById('elVoiceIdInput').value = sel.options[0].value;
-                showVoiceStatus(true, "✅ " + sel.options.length + " voix chargées !");
+                showVoiceStatus(true, "✅ " + sel.options.length + " voix chargées depuis votre compte !");
             }
         } catch(e) { showVoiceStatus(false, "❌ Erreur : " + e.message); }
     }
@@ -778,14 +772,14 @@
     function syncVoiceInputsToConfig() {
         voiceConfig.engine = document.getElementById('voiceEngineSelect').value;
         voiceConfig.elApiKey = document.getElementById('elApiKeyInput').value.trim();
-        voiceConfig.elVoiceId = document.getElementById('elVoiceIdInput').value.trim() || 'JBFqnCBsd6RMkjVDRZzb';
+        voiceConfig.elVoiceId = document.getElementById('elVoiceIdInput').value.trim() || 'gOupLcAkjEnguROwi4oS';
         voiceConfig.browserVoiceName = document.getElementById('browserVoiceSelect').value;
         localStorage.setItem('granboard_voice_config', JSON.stringify(voiceConfig));
     }
     function saveVoiceConfig() { syncVoiceInputsToConfig(); closeVoiceModal(); }
     function runVoiceTest() { syncVoiceInputsToConfig(); speakFrench(document.getElementById('testPhraseInput').value.trim() || "Allez Kan-dalf !", 'test', true); }
 
-    // --- CONNEXION BLUETOOTH + EXTINCTION IMMÉDIATE DE L'ARC-EN-CIEL ---
+    // --- BLUETOOTH ---
     async function connectGranBoard() {
         if (!navigator.bluetooth) { alert("Bluetooth non disponible ici. Utilisez Google Chrome sur Android."); return; }
         try {
@@ -796,18 +790,14 @@
             });
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService(GRAN_SERVICE);
-
             const notifyChar = await service.getCharacteristic(GRAN_NOTIFY);
             await notifyChar.startNotifications();
 
-            // Récupération du canal d'écriture 442f1572 pour piloter et éteindre les LED !
             try {
                 granWriteChar = await service.getCharacteristic(GRAN_WRITE);
                 await turnOffBoardLeds();
-                log("💡 Arc-en-ciel éteint ! LED prêtes en mode flash d'impact.");
-            } catch(e) {
-                log("ℹ️ Canal LED non trouvé : " + e.message);
-            }
+                log("💡 Arc-en-ciel éteint ! LED prêtes.");
+            } catch(e) { log("ℹ️ Canal LED non trouvé : " + e.message); }
 
             document.getElementById('bleBadge').textContent = "Connecté";
             document.getElementById('bleBadge').classList.add('ok');
@@ -824,9 +814,7 @@
                 }
                 onBoardSignal(str.trim());
             });
-        } catch (err) {
-            log("⚠️ Erreur Bluetooth : " + err.message);
-        }
+        } catch (err) { log("⚠️ Erreur Bluetooth : " + err.message); }
     }
 
     function onBoardSignal(code) {
@@ -842,12 +830,8 @@
         }
         if (segmentMap[code] && segmentMap[code].sector === -1) { nextTurn(); return; }
         if (boardLocked || manualLock) return;
-        if (segmentMap[code]) {
-            const hit = segmentMap[code];
-            registerHit(hit.label, hit.sector, hit.mult);
-        } else {
-            nextTurn();
-        }
+        if (segmentMap[code]) { const hit = segmentMap[code]; registerHit(hit.label, hit.sector, hit.mult); }
+        else nextTurn();
     }
 
     // --- PARTIE ---
@@ -887,8 +871,7 @@
         const checkedInputs = document.querySelectorAll('#selectPlayersList input[type="checkbox"]:checked');
         players = Array.of();
         checkedInputs.forEach(function(input) {
-            const id = input.value;
-            const prof = globalProfiles[id];
+            const id = input.value; const prof = globalProfiles[id];
             players.push({
                 name: prof.name, phonetic: prof.phonetic || '',
                 score: mode === '501' ? 501 : (mode === '301' ? 301 : (mode === 'clock' ? 1 : 0)),
@@ -901,8 +884,7 @@
         document.getElementById('screenSetup').classList.remove('active');
         document.getElementById('screenGame').classList.add('active');
         currentPlayer = 0; historyStack = Array.of(); boardLocked = false; manualLock = false;
-        turnOffBoardLeds();
-        updateLockUI(); renderUI();
+        turnOffBoardLeds(); updateLockUI(); renderUI();
         speakFrench("C'est parti ! " + getSpokenName(players[currentPlayer]) + ", à toi de jouer.", players[currentPlayer].name, false);
     }
 
@@ -932,8 +914,7 @@
             if (sector === 25) p.stats.bulls += 1;
         }
 
-        let won = false;
-        let busted = false;
+        let won = false; let busted = false;
         const spokenName = getSpokenName(p);
 
         if (mode === '501' || mode === '301') {
@@ -944,17 +925,13 @@
             } else {
                 p.darts.push(label);
                 if (newScore < 0 || (newScore === 1 && isDoubleOutChecked)) {
-                    busted = true;
-                    speakFrench("Ah, ça dépasse !", "bust", false);
+                    busted = true; speakFrench("Ah, ça dépasse !", "bust", false);
                     const dartsCount = p.darts.length - 1;
-                    if (dartsCount > 0 && historyStack.length >= dartsCount) {
-                        p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
-                    }
+                    if (dartsCount > 0 && historyStack.length >= dartsCount) p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
                     boardLocked = true;
                 } else if (newScore === 0) {
                     if (isDoubleOutChecked && mult !== 2 && sector !== 25) {
-                        busted = true;
-                        speakFrench("Il faut finir sur un double !", "bust", false);
+                        busted = true; speakFrench("Il faut finir sur un double !", "bust", false);
                         const dartsCount = p.darts.length - 1;
                         p.score = historyStack[historyStack.length - 1 - dartsCount].players[currentPlayer].score;
                         boardLocked = true;
@@ -964,9 +941,7 @@
                         await handleWin(p);
                         setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
                     }
-                } else {
-                    p.score = newScore;
-                }
+                } else { p.score = newScore; }
             }
         } else if (mode === 'clock') {
             p.darts.push(label);
@@ -974,17 +949,15 @@
                 p.score += 1;
                 if (p.score > 20) {
                     won = true; speakFrench("Partie gagnée pour " + spokenName + " !", "victoire", false);
-                    await handleWin(p);
-                    setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
+                    await handleWin(p); setTimeout(function() { alert('🏆 VICTOIRE DE ' + p.name); }, 400);
                 }
             }
         } else if (mode === 'cricket') {
             p.darts.push(label);
             if (CRICKET_NUMS.includes(sector)) {
                 for (let m = 0; m < mult; m++) {
-                    if ((p.cricket[sector] || 0) < 3) {
-                        p.cricket[sector] = (p.cricket[sector] || 0) + 1;
-                    } else {
+                    if ((p.cricket[sector] || 0) < 3) p.cricket[sector] = (p.cricket[sector] || 0) + 1;
+                    else {
                         const openForOthers = players.some(function(other, idx) { return idx !== currentPlayer && (other.cricket[sector] || 0) < 3; });
                         if (openForOthers) p.score += (sector === 25 ? 25 : sector);
                     }
@@ -992,7 +965,6 @@
             }
         }
 
-        // Déclenchement de la vraie LED officielle (ou animation 100+ pts à la 3e fléchette !)
         const isTonPlus = (p.darts.length >= 3 && !busted && (p.turnPoints || 0) >= 100);
         playBoardLedHit(sector, mult, isTonPlus || won);
 
@@ -1095,8 +1067,7 @@
         document.getElementById('newProfileInput').value = '';
         document.getElementById('newProfilePhonetic').value = '';
         document.getElementById('addPlayerModal').style.display = 'flex';
-        renderExistingProfilesList();
-        await pullFromGithub(false);
+        renderExistingProfilesList(); await pullFromGithub(false);
     }
     function closeAddPlayerModal() { document.getElementById('addPlayerModal').style.display = 'none'; }
     function renderExistingProfilesList() {
@@ -1121,9 +1092,7 @@
         if (newPhon !== null) {
             prof.phonetic = newPhon.trim();
             localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-            renderExistingProfilesList();
-            speakFrench(getSpokenName(prof), prof.name, false);
-            await pushToGithub(false);
+            renderExistingProfilesList(); speakFrench(getSpokenName(prof), prof.name, false); await pushToGithub(false);
         }
     }
     async function deleteSavedProfile(id) {
@@ -1139,8 +1108,7 @@
         const id = 'p' + Date.now();
         globalProfiles[id] = { name: cleanName, phonetic: phonInput.value.trim(), gamesPlayed: 0, wins: 0, totalPoints: 0, totalDarts: 0 };
         localStorage.setItem('granboard_profiles', JSON.stringify(globalProfiles));
-        renderExistingProfilesList(); input.value = ''; phonInput.value = '';
-        await pushToGithub(false);
+        renderExistingProfilesList(); input.value = ''; phonInput.value = ''; await pushToGithub(false);
     }
     async function clearLocalProfilesOnly() {
         if (confirm("Vider le cache local et recharger depuis GitHub ?")) {
@@ -1293,7 +1261,7 @@
 
     updateGhBadge();
     if (ghConfig.owner) pullFromGithub(false);
-    log("✅ Prêt ! Protocole LED GranBoard 3s + ElevenLabs intégrés.");
+    log("✅ 19 voix gratuites ElevenLabs (H/F) + LED GranBoard 3s prêts !");
 </script>
 </body>
 </html>
