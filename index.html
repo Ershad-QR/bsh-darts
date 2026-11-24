@@ -47,7 +47,9 @@ input[type=text],input[type=password],select{width:100%;font:inherit;color:var(-
 .chk{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--l);color:var(--t);font-size:1rem;margin:0}
 .chk input{width:20px;height:20px;accent-color:var(--a)}
 .nums{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}.nums .b{padding:10px 0}
-.pr{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:end;padding:8px 0;border-bottom:1px solid var(--l)}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:4px;object-fit:cover;background:var(--bg);border:1px solid var(--l);color:var(--m);font-weight:700;flex:none;vertical-align:middle}
+.who{display:flex;gap:10px;align-items:center}.avb{background:none;border:0;padding:0;cursor:pointer;border-radius:4px}
+.pr{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:end;padding:8px 0;border-bottom:1px solid var(--l)}
 .pr input{margin:0}.pr .b{padding:9px 10px}
 .bar{height:5px;background:var(--l);border-radius:3px;margin-top:4px}.bar i{display:block;height:100%;background:var(--a);border-radius:3px}
 pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-height:50vh;overflow:auto;white-space:pre-wrap;margin:0;color:var(--m)}
@@ -110,6 +112,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
   <h3>Nouveau joueur</h3>
   <label for="nName">Nom affiché</label><input type="text" id="nName" maxlength="20">
   <label for="nPh">Prononciation (facultatif, ex. Kan-dalf)</label><input type="text" id="nPh" maxlength="30">
+  <div class="row" style="margin-top:8px"><span id="nAvPrev" style="flex:none"></span><button class="b" id="nAv">Ajouter une photo</button></div>
   <div class="row" style="margin-top:12px"><button class="b p" id="nAdd">Ajouter</button><button class="b" id="nReload">Recharger depuis GitHub</button></div>
   <button class="b" data-x style="width:100%;margin-top:8px">Fermer</button>
 </dialog>
@@ -152,6 +155,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
 
 <dialog id="dAsk"><p id="askMsg" style="margin-top:0"></p><div class="row"><button class="b p" id="askY">Confirmer</button><button class="b" id="askN">Annuler</button></div></dialog>
 <dialog id="dLog"><h2>Journal</h2><pre id="logBox"></pre><button class="b" data-x style="width:100%;margin-top:10px">Fermer</button></dialog>
+<input type="file" id="avFile" accept="image/*" hidden>
 <div id="toast" role="status"></div>
 
 <script>
@@ -411,7 +415,7 @@ function upd(){
   $('pls').innerHTML=players.map((p,i)=>{
     const f=profiles[p.pid],meta=f?(f.wins||0)+' victoire'+((f.wins||0)>1?'s':'')+' sur '+(f.gamesPlayed||0):'Invité';
     const left=3-p.darts.length,fin=isX01()&&i===cur&&!locked&&!over&&left>0&&!($('dIn').checked&&p.score>=(mode==='501'?501:301))&&p.score<=180?finish(p.score,left,$('dOut').checked):null;
-    return'<div class="pl'+(i===cur?' act':'')+'" data-i="'+i+'" style="--pc:'+COL[i%COL.length].c+'"><div><div class="pn">'+esc(p.name)+'</div><div class="pm">'+meta+'</div>'+(fin?'<div class="pm" style="color:var(--a);font-weight:700">Finish : '+fin.join(' · ')+'</div>':'')+'</div>'+
+    return'<div class="pl'+(i===cur?' act':'')+'" data-i="'+i+'" style="--pc:'+COL[i%COL.length].c+'"><div class="who">'+avatar(f,48)+'<div><div class="pn">'+esc(p.name)+'</div><div class="pm">'+meta+'</div>'+(fin?'<div class="pm" style="color:var(--a);font-weight:700">Finish : '+fin.join(' · ')+'</div>':'')+'</div></div>'+
     '<div class="ps">'+(mode==='clock'?(p.score>20?'Fini':'Vise '+p.score):p.score)+'</div>'+
     '<div class="darts">'+p.darts.map(d=>'<span>'+esc(d)+'</span>').join('')+'</div>'+
     '<button class="rm" data-rm="'+i+'">Retirer</button></div>'
@@ -446,27 +450,34 @@ document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const m=+b.datas
 document.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const s=b.dataset.sp;applyHit(s,s==='MISS'?0:25,s==='D-BULL'?2:1)});
 
 // ---------- Joueurs ----------
+let avTarget='',newAv='';
+function avatar(f,s){const st='width:'+s+'px;height:'+s+'px;font-size:'+Math.round(s*.45)+'px';return f&&f.avatar?'<img class="av" alt="" src="'+esc(f.avatar)+'" style="'+st+'">':'<span class="av" style="'+st+'">'+esc(((f&&f.name)||'?').charAt(0))+'</span>'}
+function toSquare(file,size=96){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=size;const m=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,size,size);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.8))};img.onerror=()=>rej(new Error('Image illisible'));img.src=u})}
+const showNewAv=()=>{$('nAvPrev').innerHTML=newAv?avatar({avatar:newAv},44):'';$('nAv').textContent=newAv?'Changer la photo':'Ajouter une photo'};
+$('nAv').onclick=()=>{avTarget='new';$('avFile').click()};
+$('avFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const d=await toSquare(f);if(avTarget==='new'){newAv=d;showNewAv()}else if(profiles[avTarget]){profiles[avTarget].avatar=d;profiles[avTarget].updatedAt=Date.now();saveP();renderPlayers();push()}}catch(err){toast(err.message)}};
 function renderPlayers(){
-  $('plist').innerHTML=live().map(id=>'<div class="pr" data-id="'+esc(id)+'"><div><div style="font-weight:700">'+esc(profiles[id].name)+'</div><input type="text" aria-label="Prononciation de '+esc(profiles[id].name)+'" placeholder="Prononciation" value="'+esc(profiles[id].phonetic||'')+'"></div><button class="b s" data-t>Écouter</button><button class="b s d" data-del>Supprimer</button></div>').join('')||'<p style="color:var(--m)">Aucun joueur.</p>'
+  $('plist').innerHTML=live().map(id=>'<div class="pr" data-id="'+esc(id)+'"><button class="avb" data-av aria-label="Changer la photo de '+esc(profiles[id].name)+'">'+avatar(profiles[id],44)+'</button><div><div style="font-weight:700">'+esc(profiles[id].name)+'</div><input type="text" aria-label="Prononciation de '+esc(profiles[id].name)+'" placeholder="Prononciation" value="'+esc(profiles[id].phonetic||'')+'"></div><button class="b s" data-t>Écouter</button><button class="b s d" data-del>Supprimer</button></div>').join('')||'<p style="color:var(--m)">Aucun joueur.</p>'
 }
 $('plist').onchange=async e=>{const id=e.target.closest('.pr').dataset.id;profiles[id].phonetic=e.target.value.trim();profiles[id].updatedAt=Date.now();saveP();say(spoken({name:profiles[id].name,pid:id}),true);push()};
 $('plist').onclick=async e=>{
   const row=e.target.closest('.pr');if(!row)return;const id=row.dataset.id;
+  if(e.target.closest('[data-av]')){avTarget=id;$('avFile').click();return}
   if(e.target.closest('[data-t]'))say('Allez '+spoken({name:profiles[id].name,pid:id})+', à toi de jouer !',true);
   if(e.target.closest('[data-del]')&&await ask('Supprimer le profil '+profiles[id].name+' et ses statistiques ?')){profiles[id]={name:profiles[id].name,deleted:true,updatedAt:Date.now()};saveP();renderPlayers();push()}
 };
 $('nAdd').onclick=()=>{
   const n=$('nName').value.trim();if(!n){toast('Saisissez un nom.');return}
   if(live().some(k=>profiles[k].name.toUpperCase()===n.toUpperCase())){toast('Ce nom existe déjà.');return}
-  profiles['p_'+Date.now()]={name:n.toUpperCase(),phonetic:$('nPh').value.trim(),gamesPlayed:0,wins:0,totalPoints:0,totalDarts:0,triples:0,bulls:0,best501Darts:999,updatedAt:Date.now()};
-  saveP();$('nName').value='';$('nPh').value='';renderPlayers();push()
+  profiles['p_'+Date.now()]={name:n.toUpperCase(),phonetic:$('nPh').value.trim(),gamesPlayed:0,wins:0,totalPoints:0,totalDarts:0,triples:0,bulls:0,best501Darts:999,avatar:newAv||undefined,updatedAt:Date.now()};
+  saveP();$('nName').value='';$('nPh').value='';newAv='';showNewAv();renderPlayers();push()
 };
 $('nReload').onclick=async()=>{if(await ask('Remplacer les données locales par celles de GitHub ?')){profiles={};saveP();await pull();renderPlayers()}};
 $('mPlayers').onclick=()=>{renderPlayers();$('dPlayers').showModal();pull().then(renderPlayers)};
 
 // ---------- Nouvelle partie ----------
 $('mStart').onclick=async()=>{
-  $('pick').innerHTML=live().map(id=>'<label class="chk"><input type="checkbox" value="'+esc(id)+'" checked>'+esc(profiles[id].name)+'</label>').join('')||'<p style="color:var(--m)">Ajoutez d\'abord des joueurs.</p>';
+  $('pick').innerHTML=live().map(id=>'<label class="chk"><input type="checkbox" value="'+esc(id)+'" checked>'+avatar(profiles[id],32)+esc(profiles[id].name)+'</label>').join('')||'<p style="color:var(--m)">Ajoutez d\'abord des joueurs.</p>';
   $('x01opt').style.display=['501','301'].includes($('gMode').value)?'block':'none';$('dStart').showModal()
 };
 $('gMode').onchange=()=>$('x01opt').style.display=['501','301'].includes($('gMode').value)?'block':'none';
@@ -478,7 +489,7 @@ const rate=f=>f.gamesPlayed>0?Math.round((f.wins||0)/f.gamesPlayed*100):0;
 const best=f=>f.best501Darts&&f.best501Darts<999?f.best501Darts+' fl.':'–';
 function renderStats(){
   const ids=live().sort((a,b)=>(profiles[b].wins||0)-(profiles[a].wins||0)||rate(profiles[b])-rate(profiles[a]));
-  $('board').innerHTML=ids.length?ids.map((id,i)=>{const f=profiles[id];return'<div style="padding:8px 0;border-bottom:1px solid var(--l)"><div style="display:flex;justify-content:space-between"><strong>'+(i+1)+'. '+esc(f.name)+'</strong><span>'+(f.wins||0)+' / '+(f.gamesPlayed||0)+' ('+rate(f)+' %)</span></div><div class="bar"><i style="width:'+rate(f)+'%"></i></div><div class="pm">Moyenne '+avg(f)+' · Triples '+(f.triples||0)+' · Bulls '+(f.bulls||0)+' · Meilleur 501 : '+best(f)+'</div></div>'}).join(''):'Aucun joueur.';
+  $('board').innerHTML=ids.length?ids.map((id,i)=>{const f=profiles[id];return'<div style="padding:8px 0;border-bottom:1px solid var(--l)"><div style="display:flex;justify-content:space-between"><strong style="display:flex;gap:8px;align-items:center">'+(i+1)+'. '+avatar(f,30)+esc(f.name)+'</strong><span>'+(f.wins||0)+' / '+(f.gamesPlayed||0)+' ('+rate(f)+' %)</span></div><div class="bar"><i style="width:'+rate(f)+'%"></i></div><div class="pm">Moyenne '+avg(f)+' · Triples '+(f.triples||0)+' · Bulls '+(f.bulls||0)+' · Meilleur 501 : '+best(f)+'</div></div>'}).join(''):'Aucun joueur.';
   const o=ids.map(id=>'<option value="'+esc(id)+'">'+esc(profiles[id].name)+'</option>').join('');
   const a=$('du1').value,b=$('du2').value;$('du1').innerHTML=o;$('du2').innerHTML=o;
   $('du1').value=profiles[a]&&!profiles[a].deleted?a:ids[0]||'';$('du2').value=profiles[b]&&!profiles[b].deleted?b:ids[1]||ids[0]||'';duel()
