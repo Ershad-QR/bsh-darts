@@ -67,6 +67,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
     <button class="b s" id="bSnd">Son : oui</button>
   </div>
 </header>
+<p id="bleErr" role="alert" style="display:none;margin:0;color:var(--r);font-size:.9rem"></p>
 
 <section id="home" class="screen on">
   <div class="menu">
@@ -77,6 +78,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
     <button class="b" id="mGit">Synchronisation GitHub <small id="ghState">non reliée</small></button>
     <button class="b" id="mLog">Journal de la cible</button>
     <button class="b" id="mLed">Éteindre les LED de la cible</button>
+    <button class="b" id="mLedT"></button>
   </div>
 </section>
 
@@ -197,9 +199,9 @@ const live=()=>Object.keys(profiles).filter(k=>profiles[k]&&!profiles[k].deleted
 const saveP=()=>store('granboard_profiles',profiles);
 
 // ---------- Cible Bluetooth ----------
-let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false;
-function setBle(ok){connected=ok;$('dot').classList.toggle('ok',ok);$('connTxt').textContent=ok?'Cible connectée':'Connecter la cible'}
-function sendLed(a){if(!wc)return;ledQ=ledQ.then(async()=>{const d=new Uint8Array(a);if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);else await wc.writeValue(d)}).catch(e=>log('LED : '+e.message))}
+let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,lastLed=0,ledOn=load('bsh_led',{on:true}).on;
+function setBle(ok){connected=ok;if(ok)$('bleErr').style.display='none';$('dot').classList.toggle('ok',ok);$('connTxt').textContent=ok?'Cible connectée':'Connecter la cible'}
+function sendLed(a){if(!wc||!ledOn)return;ledQ=ledQ.then(async()=>{lastLed=Date.now();const d=new Uint8Array(a);if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);else await wc.writeValue(d)}).catch(e=>log('LED : '+e.message))}
 function ledOff(){clearTimeout(ledTimer);sendLed([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1])}
 function ledHit(sector,mult,ton){
   if(!wc)return;clearTimeout(ledTimer);let ms=1100;
@@ -212,24 +214,37 @@ function ledHit(sector,mult,ton){
 }
 function ledNext(){if(!wc)return;clearTimeout(ledTimer);sendLed([0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1]);ledTimer=setTimeout(ledOff,1000)}
 async function link(){
-  const srv=await dev.gatt.connect(),sv=await srv.getPrimaryService(SVC),n=await sv.getCharacteristic(NOTIF);
+  let srv;
+  for(let i=1;i<=3;i++){try{srv=await dev.gatt.connect();break}catch(e){log('Connexion GATT, essai '+i+' : '+e.message);if(i===3)throw e;await sleep(900*i)}}
+  log('Appareil : '+(dev.name||'sans nom'));
+  const sv=await srv.getPrimaryService(SVC),n=await sv.getCharacteristic(NOTIF);
   n.addEventListener('characteristicvaluechanged',onVal);await n.startNotifications();
-  try{wc=await sv.getCharacteristic(WRITE);await ledOff()}catch(e){wc=null;log('Canal LED absent : '+e.message)}
-  setBle(true);log('Cible connectée')
+  setBle(true);log('Cible connectée');
+  if(ledOn)setTimeout(async()=>{try{wc=await sv.getCharacteristic(WRITE);ledOff()}catch(e){wc=null;log('Canal LED absent : '+e.message)}},1500)
+}
+function bleFail(e){
+  const m=e.message||String(e);log('Bluetooth : '+(e.name||'')+' - '+m);
+  if(/cancel/i.test(m))return;
+  let h='Erreur : '+m;
+  if(/No Services matching|not found in device/i.test(m))h+=" → Ce n'est pas la bonne cible, ou ses identifiants ont changé. Choisissez l'appareil « GRANBOARD… » dans la liste, puis ouvrez le journal et envoyez-le-moi.";
+  else if(e.name==='NetworkError'||/GATT|connect/i.test(m))h+=" → La cible est sans doute déjà connectée ailleurs (appli Granboard, autre téléphone, autre onglet). Fermez-les, supprimez la cible dans les réglages Bluetooth du téléphone, débranchez-la 5 secondes, puis réessayez.";
+  else if(e.name==='SecurityError'||e.name==='NotAllowedError')h+=" → Autorisez le Bluetooth et « Appareils à proximité » pour Chrome.";
+  const el=$('bleErr');el.textContent=h;el.style.display='block'
 }
 async function connectBoard(){
-  if(!navigator.bluetooth){toast('Bluetooth indisponible : utilisez Chrome (Android ou ordinateur).');return}
+  if(!navigator.bluetooth){bleFail(new Error('Bluetooth indisponible : utilisez Chrome (Android ou ordinateur) en https.'));return}
   try{
     log('Recherche de la cible…');
     dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});
     dev.addEventListener('gattserverdisconnected',onDrop);
     await link();say('Cible connectée. Bon jeu !')
-  }catch(e){log('Bluetooth : '+e.message);if(e.name!=='NotFoundError')toast('Connexion impossible : '+e.message)}
+  }catch(e){bleFail(e)}
 }
 async function onDrop(){
+  if(ledOn&&Date.now()-lastLed<2500){ledOn=false;store('bsh_led',{on:false});updLedBtn();toast('LED désactivées : la cible se coupait dès qu\'elles étaient pilotées.')}
   setBle(false);wc=null;log('Cible déconnectée, reconnexion…');toast('Cible déconnectée, reconnexion…');
   for(let i=1;i<=5;i++){await sleep(1500*i);try{await link();toast('Cible reconnectée');return}catch(e){log('Essai '+i+' : '+e.message)}}
-  toast('Reconnexion impossible : touchez « Connecter la cible ».')
+  bleFail(new Error('Reconnexion impossible, touchez « Connecter la cible »'))
 }
 function onVal(e){const v=e.target.value;let s='';for(let i=0;i<v.byteLength;i++){const b=v.getUint8(i);if(b>=32&&b<=126)s+=String.fromCharCode(b)}signal(s.trim())}
 function signal(code){
@@ -550,6 +565,9 @@ $('ghLink').onclick=()=>{
 };
 $('mLog').onclick=()=>{$('logBox').textContent=logs.join('\n')||'Aucun événement.';$('dLog').showModal()};
 $('mLed').onclick=ledOff;
+function updLedBtn(){$('mLedT').textContent='Pilotage des LED : '+(ledOn?'activé':'désactivé')}
+$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led',{on:ledOn});updLedBtn();toast(ledOn?'LED activées : reconnectez la cible':'LED désactivées')};
+updLedBtn();
 $('bConn').onclick=()=>{if(!connected)connectBoard()};
 $('bSnd').onclick=()=>{snd=!snd;$('bSnd').textContent='Son : '+(snd?'oui':'non');if(!snd)A.pause()};
 
