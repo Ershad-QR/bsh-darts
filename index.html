@@ -22,9 +22,10 @@ h3{font-size:.95rem;margin:14px 0 6px;color:var(--a);font-weight:600}
 .b.p{background:var(--a);border-color:var(--a);color:#1a1608}.b.d{color:var(--r);border-color:#5a3532}
 .b.s{padding:7px 10px;font-size:.85rem;flex:none}
 .b.on{border-color:var(--a);color:var(--a)}
+.b.ok{background:#10b981;border-color:#10b981;color:#fff}
 .menu{display:flex;flex-direction:column;gap:8px}.menu .b{text-align:left;display:flex;justify-content:space-between}
 .menu .b small{color:var(--m);font-weight:500}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--r);margin-right:6px}.dot.ok{background:#4cc38a}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--r);margin-right:6px}.dot.ok{background:#fff}
 .screen{display:none;flex-direction:column;gap:12px}.screen.on{display:flex}
 .pl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:12px 14px;border:1px solid var(--l);border-left:7px solid var(--pc);border-radius:6px;background:var(--s);cursor:pointer}
 .pl.act{background:color-mix(in srgb,var(--pc) 18%,var(--s));border-color:var(--pc)}
@@ -166,7 +167,10 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
 
 <script>
 const $=i=>document.getElementById(i);
-const SVC='442f1570-8a00-9a28-cbe1-e1d4212d53eb',NOTIF='442f1571-8a00-9a28-cbe1-e1d4212d53eb',WRITE='442f1572-8a00-9a28-cbe1-e1d4212d53eb',VOICE='8qPDlLCTodAerFLrTwhm';
+const GRAN_SERVICE='442f1570-8a00-9a28-cbe1-e1d4212d53eb';
+const GRAN_NOTIFY='442f1571-8a00-9a28-cbe1-e1d4212d53eb';
+const GRAN_WRITE='442f1572-8a00-9a28-cbe1-e1d4212d53eb';
+const VOICE='8qPDlLCTodAerFLrTwhm';
 
 const CODES=[,'2.3 2.4 2.5 2.6','9.1 9.0 9.2 8.2','7.1 7.0 7.2 8.4','0.1 0.3 0.5 0.6','5.1 5.2 5.4 4.6','1.0 1.1 1.3 4.4','11.1 11.2 11.4 8.6','6.2 6.4 6.5 6.6','9.3 9.4 9.5 9.6','2.0 2.1 2.2 4.3','7.3 7.4 7.5 7.6','5.0 5.3 5.5 5.6','0.0 0.2 0.4 4.5','10.3 10.4 10.5 10.6','3.0 3.1 3.2 4.2','11.0 11.3 11.5 11.6','10.1 10.0 10.2 8.3','1.2 1.4 1.5 1.6','6.1 6.0 6.3 8.5','3.3 3.4 3.5 3.6'];
 const MAP={};
@@ -201,23 +205,80 @@ try{
 const live=()=>Object.keys(profiles).filter(k=>profiles[k]&&!profiles[k].deleted);
 const saveP=()=>store('granboard_profiles',profiles);
 
-// ---------- Cible Bluetooth (Connexion 100% identique au CodePen fonctionnel) ----------
-let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,dropToken=0,ledOn=load('bsh_led',{on:true}).on;
-function setBle(ok){connected=ok;if(ok)$('bleErr').style.display='none';$('dot').classList.toggle('ok',ok);$('connTxt').textContent=ok?'Cible connectée':'Connecter la cible'}
+// ---------- Cible Bluetooth (Code exact du CodePen fonctionnel) ----------
+let activeService=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,ledOn=load('bsh_led_v2',{on:false}).on;
 
-function sendRaw(a){
-  if(!wc)return;
+function setBle(ok){
+  connected=ok;
+  if(ok)$('bleErr').style.display='none';
+  $('dot').classList.toggle('ok',ok);
+  $('bConn').classList.toggle('ok',ok);
+  $('connTxt').textContent=ok?'✅ Cible connectée':'Connecter la cible';
+}
+
+async function connectBoard(){
+  if(!navigator.bluetooth){
+    alert("Bluetooth indisponible : ouvrez la page dans Google Chrome !");
+    return;
+  }
+  try{
+    $('bleErr').style.display='none';
+    log('Ouverture du sélecteur Bluetooth…');
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:Array.of(GRAN_SERVICE)
+    });
+    const server=await device.gatt.connect();
+    const service=await server.getPrimaryService(GRAN_SERVICE);
+    const char=await service.getCharacteristic(GRAN_NOTIFY);
+    await char.startNotifications();
+
+    activeService=service;
+    wc=null;
+    setBle(true);
+    sfx('bull');
+    toast('✅ Cible connectée !');
+    log('Cible connectée : '+(device.name||'GRANBOARD'));
+
+    char.addEventListener('characteristicvaluechanged',function(event){
+      const val=event.target.value;
+      let str='';
+      for(let i=0;i<val.byteLength;i++){
+        const b=val.getUint8(i);
+        if(b>=32&&b<=126)str+=String.fromCharCode(b);
+      }
+      signal(str.trim());
+    });
+
+    device.addEventListener('gattserverdisconnected',function(){
+      setBle(false);
+      activeService=null;
+      wc=null;
+      log('Cible déconnectée');
+      toast('Cible déconnectée');
+    });
+  }catch(err){
+    log('Erreur Bluetooth : '+err.message);
+    if(!/cancel/i.test(err.message)){
+      $('bleErr').textContent='Erreur Bluetooth : '+err.message;
+      $('bleErr').style.display='block';
+    }
+  }
+}
+
+function sendRawLed(a){
+  if(!activeService)return;
   ledQ=ledQ.then(async()=>{
+    if(!wc)wc=await activeService.getCharacteristic(GRAN_WRITE);
     const d=new Uint8Array(a);
     if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);
     else await wc.writeValue(d);
   }).catch(e=>log('LED : '+e.message));
 }
-function sendLed(a){if(ledOn)sendRaw(a)}
-function ledOff(){clearTimeout(ledTimer);sendRaw(Array.of(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))}
-
+function sendLed(a){if(ledOn)sendRawLed(a)}
+function ledOff(){clearTimeout(ledTimer);sendRawLed(Array.of(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))}
 function ledHit(sector,mult,ton){
-  if(!wc||!ledOn)return;clearTimeout(ledTimer);let ms=1100;
+  if(!ledOn||!activeService)return;clearTimeout(ledTimer);let ms=1100;
   if(ton){sendLed(Array.of(0x11,0,0,0xFF,0,0xFF,0xFF,0,0,0,0x0D,0,5,2,0,1));ms=2400}
   else if(sector===25&&mult===2){sendLed(Array.of(0x1F,0x7D,0x0A,0x4A,0x7D,0x0A,0x4A,0xFC,0x16,0x62,2,0,0x23,1,0,1));ms=1600}
   else if(sector===25){sendLed(Array.of(0x18,0x7D,0,0,0,0,0,0,0,0,0,0,0x14,0,0,1));ms=1200}
@@ -225,82 +286,28 @@ function ledHit(sector,mult,ton){
   else return;
   ledTimer=setTimeout(ledOff,ms);
 }
-function ledNext(){if(!wc||!ledOn)return;clearTimeout(ledTimer);sendLed(Array.of(0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1));ledTimer=setTimeout(ledOff,1000)}
+function ledNext(){if(!ledOn||!activeService)return;clearTimeout(ledTimer);sendLed(Array.of(0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1));ledTimer=setTimeout(ledOff,1000)}
 
-async function link(){
-  const server=await dev.gatt.connect();
-  const service=await server.getPrimaryService(SVC);
-  const char=await service.getCharacteristic(NOTIF);
-  await char.startNotifications();
-  setBle(true);
-  log('Cible connectée : '+(dev.name||'GRANBOARD'));
-  char.removeEventListener('characteristicvaluechanged',onVal);
-  char.addEventListener('characteristicvaluechanged',onVal);
-  // Ouverture différée et non-bloquante du canal LED pour ne jamais perturber les touches
-  setTimeout(async()=>{
-    try{
-      wc=await service.getCharacteristic(WRITE);
-      log('Canal LED actif');
-      if(ledOn)ledOff();
-    }catch(e){
-      wc=null;
-      log('Canal LED ignoré : '+e.message);
-    }
-  },600);
-}
-
-function bleFail(e){
-  const m=e.message||String(e);log('Bluetooth : '+(e.name||'')+' - '+m);
-  if(/cancel/i.test(m))return;
-  let h='Erreur : '+m;
-  if(/No Services matching|not found in device/i.test(m))h+=" → Choisissez bien l'appareil « GRANBOARD » dans la liste.";
-  else if(e.name==='NetworkError'||/GATT|connect/i.test(m))h+=" → Vérifiez que l'appli officielle GranBoard est fermée, puis réessayez.";
-  else if(e.name==='SecurityError'||e.name==='NotAllowedError')h+=" → Autorisez le Bluetooth et « Appareils à proximité » pour Chrome.";
-  const el=$('bleErr');el.textContent=h;el.style.display='block'
-}
-
-async function connectBoard(){
-  if(!navigator.bluetooth){bleFail(new Error('Bluetooth indisponible : utilisez Chrome (Android ou ordinateur) en https.'));return}
-  dropToken++;
-  try{
-    if(dev){dev.removeEventListener('gattserverdisconnected',onDrop);if(dev.gatt&&dev.gatt.connected){try{dev.gatt.disconnect()}catch(e){}}}
-    log('Recherche de la cible…');
-    dev=await navigator.bluetooth.requestDevice({
-      acceptAllDevices:true,
-      optionalServices:Array.of(SVC)
-    });
-    dev.addEventListener('gattserverdisconnected',onDrop);
-    await link();
-    sfx('bull');
-    toast('Cible connectée !');
-    say('Cible connectée. Bon jeu !');
-  }catch(e){bleFail(e)}
-}
-
-async function onDrop(){
-  const myTok=++dropToken;
-  setBle(false);wc=null;log('Cible déconnectée, reconnexion…');toast('Cible déconnectée, reconnexion…');
-  for(let i=1;i<=3;i++){
-    await sleep(1500*i);
-    if(myTok!==dropToken||connected)return;
-    try{await link();toast('Cible reconnectée');return}catch(e){log('Reconnexion '+i+' : '+e.message)}
-  }
-  if(myTok===dropToken)bleFail(new Error('Reconnexion impossible, touchez « Connecter la cible »'))
-}
-
-function onVal(e){const v=e.target.value;let s='';for(let i=0;i<v.byteLength;i++){const b=v.getUint8(i);if(b>=32&&b<=126)s+=String.fromCharCode(b)}signal(s.trim())}
 function signal(code){
   $('lastRaw').textContent='Signal : "'+code+'"';
   if(!code||code.startsWith('GB'))return;
   const h=MAP[code];
-  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);toast('Impact : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
+  if(!$('game').classList.contains('on')){
+    if(h&&h.sector>0){
+      log('Test cible : '+h.label+' ('+code+')');
+      toast('Touche détectée : '+h.label);
+      sfx(sfxFor(h.sector,h.mult));
+      ledHit(h.sector,h.mult,false);
+    }
+    return;
+  }
   if(h&&h.sector===-1){next();return}
-  if(!h){log('Signal inconnu ignoré : '+code);return}
+  if(!h){log('Signal inconnu : '+code);return}
   if(locked||man)return;
-  hit(h.label,h.sector,h.mult)
+  hit(h.label,h.sector,h.mult);
 }
 
-// ---------- Voix ----------
+// ---------- Voix (Anti-coupure 250 ms via Web Audio API) ----------
 let ac=null,snd=true,warned=false,curSrc=null;
 const memBuf={};
 const getAc=()=>{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac};
@@ -434,7 +441,7 @@ function startGame(ids){
   mode=$('gMode').value;
   players=ids.map(fresh);cur=0;hist=[];locked=false;man=false;over=false;lastIds=ids;
   $('home').classList.remove('on');$('game').classList.add('on');
-  ledOff();upd();say('C\'est parti ! '+spoken(players.at(0))+', à toi de jouer.')
+  upd();say('C\'est parti ! '+spoken(players.at(0))+', à toi de jouer.')
 }
 
 function hit(label,sector,mult){
@@ -512,7 +519,7 @@ async function commit(){
 $('endAgain').onclick=async()=>{$('dEnd').close();await commit();startGame(lastIds)};
 $('endQuit').onclick=async()=>{$('dEnd').close();await commit();leave()};
 $('endUndo').onclick=()=>{$('dEnd').close();over=false;undo()};
-function leave(){ledOff();over=false;$('game').classList.remove('on');$('home').classList.add('on')}
+function leave(){over=false;$('game').classList.remove('on');$('home').classList.add('on')}
 
 function undo(){
   if(!hist.length)return;
@@ -678,7 +685,7 @@ $('ghLink').onclick=()=>{
 $('mLog').onclick=()=>{$('logBox').textContent=logs.join('\n')||'Aucun événement.';$('dLog').showModal()};
 $('mLed').onclick=ledOff;
 function updLedBtn(){$('mLedT').textContent='Pilotage des LED : '+(ledOn?'activé':'désactivé')}
-$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led',{on:ledOn});updLedBtn();toast(ledOn?'LED activées':'LED désactivées')};
+$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led_v2',{on:ledOn});updLedBtn();toast(ledOn?'LED activées':'LED désactivées')};
 updLedBtn();
 
 $('bConn').onclick=connectBoard;
