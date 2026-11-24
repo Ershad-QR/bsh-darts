@@ -179,6 +179,7 @@ const COL=Array.of({c:'#e0483e',led:Array.of(125,0,0)},{c:'#2fb37a',led:Array.of
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const withTimeout=(p,ms,msg)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]);
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const logs=[];
@@ -201,7 +202,7 @@ try{
 const live=()=>Object.keys(profiles).filter(k=>profiles[k]&&!profiles[k].deleted);
 const saveP=()=>store('granboard_profiles',profiles);
 
-// ---------- Cible Bluetooth ----------
+// ---------- Cible Bluetooth (Ordre séquentiel propre : NOTIF d'abord -> Vert -> puis WRITE LED) ----------
 let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,dropToken=0,ledOn=load('bsh_led',{on:true}).on;
 function setBle(ok){connected=ok;if(ok)$('bleErr').style.display='none';$('dot').classList.toggle('ok',ok);$('connTxt').textContent=ok?'Cible connectée':'Connecter la cible'}
 
@@ -215,11 +216,7 @@ function sendRaw(a){
 }
 function sendLed(a){if(ledOn)sendRaw(a)}
 function ledOff(){clearTimeout(ledTimer);sendRaw(Array.of(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))}
-function boardHandshake(){
-  sendRaw(Array.of(0x16,0,0,0,0,0,0,0,0,0,0,0,0x6E,0,0,1));
-  sendRaw(Array.of(0x15,0x7D,0,0,0,0,0,0,0,0,0,0,5,0x64,0,1));
-  ledOff();
-}
+
 function ledHit(sector,mult,ton){
   if(!wc||!ledOn)return;clearTimeout(ledTimer);let ms=1100;
   if(ton){sendLed(Array.of(0x11,0,0,0xFF,0,0xFF,0xFF,0,0,0,0x0D,0,5,2,0,1));ms=2400}
@@ -232,18 +229,38 @@ function ledHit(sector,mult,ton){
 function ledNext(){if(!wc||!ledOn)return;clearTimeout(ledTimer);sendLed(Array.of(0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1));ledTimer=setTimeout(ledOff,1000)}
 
 async function link(){
-  let srv;
-  for(let i=1;i<=3;i++){try{srv=await dev.gatt.connect();break}catch(e){log('Connexion GATT, essai '+i+' : '+e.message);if(i===3)throw e;await sleep(800*i)}}
-  log('Appareil : '+(dev.name||'sans nom'));
-  const sv=await srv.getPrimaryService(SVC);
-  const chars=await sv.getCharacteristics();
-  const n=chars.find(c=>c.uuid.toLowerCase()===NOTIF)||await sv.getCharacteristic(NOTIF);
-  wc=chars.find(c=>c.uuid.toLowerCase()===WRITE)||null;
-  n.removeEventListener('characteristicvaluechanged',onVal);
-  n.addEventListener('characteristicvaluechanged',onVal);
-  await n.startNotifications();
-  setBle(true);log('Cible connectée (canal écriture : '+(wc?'OK':'absent')+')');
-  setTimeout(()=>{if(connected&&wc)boardHandshake()},300);
+  for(let attempt=1;attempt<=3;attempt++){
+    try{
+      log('1/4 Connexion GATT (essai '+attempt+')…');
+      const srv=await withTimeout(dev.gatt.connect(),6000,'Délai GATT dépassé');
+      await sleep(300); // Laisse la négociation BLE du Pixel 8 Pro se stabiliser
+      log('2/4 Ouverture du service GranBoard…');
+      const sv=await withTimeout(srv.getPrimaryService(SVC),5000,'Service introuvable');
+      log('3/4 Activation des capteurs de fléchettes…');
+      const n=await withTimeout(sv.getCharacteristic(NOTIF),4000,'Capteur introuvable');
+      await withTimeout(n.startNotifications(),4000,'startNotifications bloqué');
+      n.removeEventListener('characteristicvaluechanged',onVal);
+      n.addEventListener('characteristicvaluechanged',onVal);
+      // Capteurs actifs -> le point passe immédiatement au VERT !
+      setBle(true);
+      log('✅ Capteurs actifs ! Ouverture du canal LED…');
+      await sleep(250);
+      try{
+        wc=await withTimeout(sv.getCharacteristic(WRITE),3000,'Canal LED lent');
+        log('4/4 Canal LED prêt');
+        if(ledOn)ledOff();
+      }catch(le){
+        wc=null;
+        log('LED non disponibles ('+le.message+'), les fléchettes restent actives.');
+      }
+      return;
+    }catch(e){
+      log('Échec essai '+attempt+' : '+e.message);
+      if(attempt===3)throw e;
+      try{if(dev.gatt.connected)dev.gatt.disconnect()}catch(_){}
+      await sleep(900*attempt);
+    }
+  }
 }
 
 function bleFail(e){
@@ -251,7 +268,7 @@ function bleFail(e){
   if(/cancel/i.test(m))return;
   let h='Erreur : '+m;
   if(/No Services matching|not found in device/i.test(m))h+=" → Ce n'est pas la bonne cible. Choisissez « GRANBOARD » dans la liste.";
-  else if(e.name==='NetworkError'||/GATT|connect/i.test(m))h+=" → La cible est encore liée à l'appli officielle GranBoard (fermez complètement l'appli GranBoard des applications récentes du téléphone).";
+  else if(e.name==='NetworkError'||/GATT|connect|Délai|bloqué/i.test(m))h+=" → Coupez/rallumez le Bluetooth du téléphone et vérifiez que l'appli officielle GranBoard est bien fermée.";
   else if(e.name==='SecurityError'||e.name==='NotAllowedError')h+=" → Autorisez le Bluetooth et « Appareils à proximité » pour Chrome.";
   const el=$('bleErr');el.textContent=h;el.style.display='block'
 }
@@ -267,7 +284,9 @@ async function connectBoard(){
       optionalServices:Array.of(SVC)
     });
     dev.addEventListener('gattserverdisconnected',onDrop);
-    await link();say('Cible connectée. Bon jeu !')
+    await link();
+    toast('Cible connectée !');
+    say('Cible connectée. Bon jeu !');
   }catch(e){bleFail(e)}
 }
 
@@ -277,7 +296,7 @@ async function onDrop(){
   for(let i=1;i<=3;i++){
     await sleep(1500*i);
     if(myTok!==dropToken||connected)return;
-    try{await link();toast('Cible reconnectée');return}catch(e){log('Essai '+i+' : '+e.message)}
+    try{await link();toast('Cible reconnectée');return}catch(e){log('Reconnexion '+i+' : '+e.message)}
   }
   if(myTok===dropToken)bleFail(new Error('Reconnexion impossible, touchez « Connecter la cible »'))
 }
@@ -286,9 +305,9 @@ function onVal(e){const v=e.target.value;let s='';for(let i=0;i<v.byteLength;i++
 function signal(code){
   $('lastRaw').textContent='Signal : "'+code+'"';
   if(!code)return;
-  if(code.startsWith('GB')){log('Firmware cible reçu : '+code+' → envoi handshake');boardHandshake();return}
+  if(code.startsWith('GB')){log('Firmware cible reçu : '+code);if(ledOn&&wc)ledOff();return}
   const h=MAP[code];
-  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
+  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);toast('Impact détecté : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
   if(h&&h.sector===-1){next();return}
   if(!h){log('Signal inconnu ignoré : '+code);return}
   if(locked||man)return;
@@ -561,7 +580,7 @@ function applyHit(label,sector,mult){
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const m=+b.dataset.m;applyHit('SDT'[m-1]+selNum,selNum,m)});
 document.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const s=b.dataset.sp;applyHit(s,s==='MISS'?0:25,s==='D-BULL'?2:1)});
 
-// ---------- Joueurs (Lecture photo corrigée avec .item(0) + vidage différé) ----------
+// ---------- Joueurs ----------
 let avTarget='',newAv='';
 function avatar(f,s){const st='width:'+s+'px;height:'+s+'px;font-size:'+Math.round(s*.45)+'px';return f&&f.avatar?'<img class="av" alt="" src="'+esc(f.avatar)+'" style="'+st+'">':'<span class="av" style="'+st+'">'+esc(((f&&f.name)||'?').charAt(0))+'</span>'}
 function toSquare(file,size=96){
