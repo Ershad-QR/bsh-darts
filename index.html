@@ -130,7 +130,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
 <dialog id="dVoice"><h2>Voix</h2>
   <label for="elKey">Clé API ElevenLabs (sk_…)</label><input type="password" id="elKey" autocomplete="off">
   <p style="color:var(--m);font-size:.8rem;margin:6px 0 0">Voix utilisée : <code>8qPDlLCTodAerFLrTwhm</code>. Les phrases déjà générées sont gardées sur l'appareil et ne consomment plus de crédits.</p>
-  <label for="elTest">Phrase de test</label><input type="text" id="elTest" value="Triple vingt ! Allez Kan-dalf, à toi de jouer !">
+  <label for="elTest">Phrase de test</label><input type="text" id="elTest" value="Double douze ! Triple vingt ! Bulle !">
   <h3>Sons</h3><div id="sfxList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   <p id="elStatus" style="min-height:1.3em;font-size:.85rem;margin:8px 0 0"></p>
   <div class="row" style="margin-top:10px"><button class="b" id="elRun">Tester</button><button class="b p" id="elSave">Enregistrer</button><button class="b" data-x>Fermer</button></div>
@@ -164,15 +164,16 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
 <script>
 const $=i=>document.getElementById(i);
 const SVC='442f1570-8a00-9a28-cbe1-e1d4212d53eb',NOTIF='442f1571-8a00-9a28-cbe1-e1d4212d53eb',WRITE='442f1572-8a00-9a28-cbe1-e1d4212d53eb',VOICE='8qPDlLCTodAerFLrTwhm';
+
 // Codes de la cible par secteur : simple, triple, simple, double
 const CODES=[,'2.3 2.4 2.5 2.6','9.1 9.0 9.2 8.2','7.1 7.0 7.2 8.4','0.1 0.3 0.5 0.6','5.1 5.2 5.4 4.6','1.0 1.1 1.3 4.4','11.1 11.2 11.4 8.6','6.2 6.4 6.5 6.6','9.3 9.4 9.5 9.6','2.0 2.1 2.2 4.3','7.3 7.4 7.5 7.6','5.0 5.3 5.5 5.6','0.0 0.2 0.4 4.5','10.3 10.4 10.5 10.6','3.0 3.1 3.2 4.2','11.0 11.3 11.5 11.6','10.1 10.0 10.2 8.3','1.2 1.4 1.5 1.6','6.1 6.0 6.3 8.5','3.3 3.4 3.5 3.6'];
 const MAP={};
-CODES.forEach((s,n)=>{if(s)s.split(' ').forEach((c,k)=>{MAP[c+'@']={label:(k===1?'T':k===3?'D':'S')+n,sector:n,mult:[1,3,1,2][k]}})});
+CODES.forEach((s,n)=>{if(s)s.split(' ').forEach((c,k)=>{MAP[c+'@']={label:(k===1?'T':k===3?'D':'S')+n,sector:n,mult:Array.of(1,3,1,2).at(k)}})});
 MAP['8.0@']={label:'BULL',sector:25,mult:1};MAP['4.0@']={label:'D-BULL',sector:25,mult:2};MAP['BTN@']={sector:-1};
-const RING=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5],CRICKET=[20,19,18,17,16,15,25];
-const FR=['','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf','vingt'];
-// Couleur à l'écran = couleur des LED de la cible (valeurs 0-125)
-const COL=[{c:'#e0483e',led:[125,0,0]},{c:'#2fb37a',led:[0,125,64]},{c:'#e0a526',led:[125,80,0]},{c:'#4a90d9',led:[0,64,125]},{c:'#b36ad9',led:[100,0,125]},{c:'#33b8c4',led:[0,110,125]}];
+
+const RING=Array.of(20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5),CRICKET=Array.of(20,19,18,17,16,15,25);
+const FR=Array.of('','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf','vingt');
+const COL=Array.of({c:'#e0483e',led:Array.of(125,0,0)},{c:'#2fb37a',led:Array.of(0,125,64)},{c:'#e0a526',led:Array.of(125,80,0)},{c:'#4a90d9',led:Array.of(0,64,125)},{c:'#b36ad9',led:Array.of(100,0,125)},{c:'#33b8c4',led:Array.of(0,110,125)});
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -190,66 +191,105 @@ document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>b.closest('dialog
 let voice=Object.assign({elApiKey:''},load('granboard_voice_config',{}));
 let ghc=Object.assign({owner:'',repo:'',token:''},load('granboard_gh_config',{}));
 let profiles=load('granboard_profiles',{});
-if(!ghc.owner&&location.hostname.endsWith('.github.io')){ghc.owner=location.hostname.replace('.github.io','');ghc.repo=location.pathname.split('/').filter(Boolean)[0]||''}
-try{ // lien de configuration : #gh=... (ou ancien ?gh=...)
+if(!ghc.owner&&location.hostname.endsWith('.github.io')){ghc.owner=location.hostname.replace('.github.io','');ghc.repo=location.pathname.split('/').filter(Boolean).at(0)||''}
+try{
   const raw=new URLSearchParams(location.hash.slice(1)).get('gh')||new URLSearchParams(location.search).get('gh');
-  if(raw){const a=atob(raw).split('|');if(a.length===3){ghc={owner:a[0],repo:a[1],token:a[2]};store('granboard_gh_config',ghc);history.replaceState({},'',location.pathname)}}
+  if(raw){const a=atob(raw).split('|');if(a.length===3){ghc={owner:a.at(0),repo:a.at(1),token:a.at(2)};store('granboard_gh_config',ghc);history.replaceState({},'',location.pathname)}}
 }catch(e){}
 const live=()=>Object.keys(profiles).filter(k=>profiles[k]&&!profiles[k].deleted);
 const saveP=()=>store('granboard_profiles',profiles);
 
-// ---------- Cible Bluetooth ----------
-let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,lastLed=0,ledOn=load('bsh_led',{on:true}).on;
+// ---------- Cible Bluetooth (Séquence officielle reproduite depuis btsnoop) ----------
+let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,dropToken=0,ledOn=load('bsh_led',{on:true}).on;
 function setBle(ok){connected=ok;if(ok)$('bleErr').style.display='none';$('dot').classList.toggle('ok',ok);$('connTxt').textContent=ok?'Cible connectée':'Connecter la cible'}
-function sendLed(a){if(!wc||!ledOn)return;ledQ=ledQ.then(async()=>{lastLed=Date.now();const d=new Uint8Array(a);if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);else await wc.writeValue(d)}).catch(e=>log('LED : '+e.message))}
-function ledOff(){clearTimeout(ledTimer);sendLed([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1])}
+
+function sendRaw(a){
+  if(!wc)return;
+  ledQ=ledQ.then(async()=>{
+    const d=new Uint8Array(a);
+    if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);
+    else await wc.writeValue(d);
+  }).catch(e=>log('Écriture cible : '+e.message));
+}
+function sendLed(a){if(ledOn)sendRaw(a)}
+function ledOff(){clearTimeout(ledTimer);sendRaw(Array.of(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))}
+
+// Séquence d'initialisation officielle envoyée par l'appli GranBoard dès réception de GB7;101
+function boardHandshake(){
+  sendRaw(Array.of(0x16,0,0,0,0,0,0,0,0,0,0,0,0x6E,0,0,1));
+  sendRaw(Array.of(0x15,0x7D,0,0,0,0,0,0,0,0,0,0,5,0x64,0,1));
+  ledOff();
+}
+
 function ledHit(sector,mult,ton){
-  if(!wc)return;clearTimeout(ledTimer);let ms=1100;
-  if(ton){sendLed([0x11,0,0,0xFF,0,0xFF,0xFF,0,0,0,0x0D,0,5,2,0,1]);ms=2400}
-  else if(sector===25&&mult===2){sendLed([0x1F,0x7D,0x0A,0x4A,0x7D,0x0A,0x4A,0xFC,0x16,0x62,2,0,0x23,1,0,1]);ms=1600}
-  else if(sector===25){sendLed([0x18,0x7D,0,0,0,0,0,0,0,0,0,0,0x14,0,0,1]);ms=1200}
-  else if(sector>=1&&sector<=20){const pos=(25+RING.indexOf(sector)*3)%60,[r,g,b]=COL[cur%COL.length].led;sendLed([mult,r,g,b,0xD7,0x4C,0,mult===3?0x7D:0,0,0,pos,0,0x14,0,0,1])}
+  if(!wc||!ledOn)return;clearTimeout(ledTimer);let ms=1100;
+  if(ton){sendLed(Array.of(0x11,0,0,0xFF,0,0xFF,0xFF,0,0,0,0x0D,0,5,2,0,1));ms=2400}
+  else if(sector===25&&mult===2){sendLed(Array.of(0x1F,0x7D,0x0A,0x4A,0x7D,0x0A,0x4A,0xFC,0x16,0x62,2,0,0x23,1,0,1));ms=1600}
+  else if(sector===25){sendLed(Array.of(0x18,0x7D,0,0,0,0,0,0,0,0,0,0,0x14,0,0,1));ms=1200}
+  else if(sector>=1&&sector<=20){const pos=(25+RING.indexOf(sector)*3)%60,[r,g,b]=COL[cur%COL.length].led;sendLed(Array.of(mult,r,g,b,0xD7,0x4C,0,mult===3?0x7D:0,0,0,pos,0,0x14,0,0,1))}
   else return;
   ledTimer=setTimeout(ledOff,ms);
 }
-function ledNext(){if(!wc)return;clearTimeout(ledTimer);sendLed([0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1]);ledTimer=setTimeout(ledOff,1000)}
+function ledNext(){if(!wc||!ledOn)return;clearTimeout(ledTimer);sendLed(Array.of(0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1));ledTimer=setTimeout(ledOff,1000)}
+
 async function link(){
   let srv;
-  for(let i=1;i<=3;i++){try{srv=await dev.gatt.connect();break}catch(e){log('Connexion GATT, essai '+i+' : '+e.message);if(i===3)throw e;await sleep(900*i)}}
+  for(let i=1;i<=3;i++){try{srv=await dev.gatt.connect();break}catch(e){log('Connexion GATT, essai '+i+' : '+e.message);if(i===3)throw e;await sleep(800*i)}}
   log('Appareil : '+(dev.name||'sans nom'));
-  const sv=await srv.getPrimaryService(SVC),n=await sv.getCharacteristic(NOTIF);
-  n.addEventListener('characteristicvaluechanged',onVal);await n.startNotifications();
-  setBle(true);log('Cible connectée');
-  if(ledOn)setTimeout(async()=>{try{wc=await sv.getCharacteristic(WRITE);ledOff()}catch(e){wc=null;log('Canal LED absent : '+e.message)}},1500)
+  const sv=await srv.getPrimaryService(SVC);
+  // Découverte simultanée des caractéristiques comme l'appli officielle (442f1572 + 442f1571)
+  const chars=await sv.getCharacteristics();
+  const n=chars.find(c=>c.uuid.toLowerCase()===NOTIF)||await sv.getCharacteristic(NOTIF);
+  wc=chars.find(c=>c.uuid.toLowerCase()===WRITE)||null;
+  n.removeEventListener('characteristicvaluechanged',onVal);
+  n.addEventListener('characteristicvaluechanged',onVal);
+  await n.startNotifications();
+  setBle(true);log('Cible connectée (canal écriture : '+(wc?'OK':'absent')+')');
+  // Au cas où GB7;101 aurait été émis juste pendant startNotifications
+  setTimeout(()=>{if(connected&&wc)boardHandshake()},300);
 }
+
 function bleFail(e){
   const m=e.message||String(e);log('Bluetooth : '+(e.name||'')+' - '+m);
   if(/cancel/i.test(m))return;
   let h='Erreur : '+m;
-  if(/No Services matching|not found in device/i.test(m))h+=" → Ce n'est pas la bonne cible, ou ses identifiants ont changé. Choisissez l'appareil « GRANBOARD… » dans la liste, puis ouvrez le journal et envoyez-le-moi.";
-  else if(e.name==='NetworkError'||/GATT|connect/i.test(m))h+=" → La cible est sans doute déjà connectée ailleurs (appli Granboard, autre téléphone, autre onglet). Fermez-les, supprimez la cible dans les réglages Bluetooth du téléphone, débranchez-la 5 secondes, puis réessayez.";
+  if(/No Services matching|not found in device/i.test(m))h+=" → Ce n'est pas la bonne cible. Choisissez « GRANBOARD » dans la liste.";
+  else if(e.name==='NetworkError'||/GATT|connect/i.test(m))h+=" → La cible est encore liée à l'appli officielle GranBoard (fermez complètement l'appli GranBoard des applications récentes du téléphone).";
   else if(e.name==='SecurityError'||e.name==='NotAllowedError')h+=" → Autorisez le Bluetooth et « Appareils à proximité » pour Chrome.";
   const el=$('bleErr');el.textContent=h;el.style.display='block'
 }
+
 async function connectBoard(){
   if(!navigator.bluetooth){bleFail(new Error('Bluetooth indisponible : utilisez Chrome (Android ou ordinateur) en https.'));return}
+  dropToken++; // Stoppe toute boucle de reconnexion automatique en cours
   try{
-    log('Recherche de la cible…');
-    dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});
+    if(dev){dev.removeEventListener('gattserverdisconnected',onDrop);if(dev.gatt&&dev.gatt.connected){try{dev.gatt.disconnect()}catch(e){}}}
+    log('Recherche de la cible GRANBOARD…');
+    dev=await navigator.bluetooth.requestDevice({
+      filters:Array.of({services:Array.of(SVC)},{namePrefix:'GRAN'},{namePrefix:'Gran'}),
+      optionalServices:Array.of(SVC)
+    });
     dev.addEventListener('gattserverdisconnected',onDrop);
     await link();say('Cible connectée. Bon jeu !')
   }catch(e){bleFail(e)}
 }
+
 async function onDrop(){
-  if(ledOn&&Date.now()-lastLed<2500){ledOn=false;store('bsh_led',{on:false});updLedBtn();toast('LED désactivées : la cible se coupait dès qu\'elles étaient pilotées.')}
+  const myTok=++dropToken;
   setBle(false);wc=null;log('Cible déconnectée, reconnexion…');toast('Cible déconnectée, reconnexion…');
-  for(let i=1;i<=5;i++){await sleep(1500*i);try{await link();toast('Cible reconnectée');return}catch(e){log('Essai '+i+' : '+e.message)}}
-  bleFail(new Error('Reconnexion impossible, touchez « Connecter la cible »'))
+  for(let i=1;i<=3;i++){
+    await sleep(1500*i);
+    if(myTok!==dropToken||connected)return;
+    try{await link();toast('Cible reconnectée');return}catch(e){log('Essai '+i+' : '+e.message)}
+  }
+  if(myTok===dropToken)bleFail(new Error('Reconnexion impossible, touchez « Connecter la cible »'))
 }
+
 function onVal(e){const v=e.target.value;let s='';for(let i=0;i<v.byteLength;i++){const b=v.getUint8(i);if(b>=32&&b<=126)s+=String.fromCharCode(b)}signal(s.trim())}
 function signal(code){
   $('lastRaw').textContent='Signal : "'+code+'"';
-  if(!code||code.startsWith('GB'))return;
+  if(!code)return;
+  if(code.startsWith('GB')){log('Firmware cible reçu : '+code+' → envoi handshake');boardHandshake();return}
   const h=MAP[code];
   if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
   if(h&&h.sector===-1){next();return}
@@ -258,29 +298,32 @@ function signal(code){
   hit(h.label,h.sector,h.mult)
 }
 
-// ---------- Voix ----------
-let ac=null,snd=true,warned=false;const A=new Audio();
-document.addEventListener('pointerdown',()=>{A.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';A.play().catch(()=>{})},{once:true});
+// ---------- Voix (Web Audio + 250 ms de silence en tête pour 0 syllabe coupée) ----------
+let ac=null,snd=true,warned=false,curSrc=null;
+const memBuf={};
 const getAc=()=>{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac};
+document.addEventListener('pointerdown',()=>{try{getAc()}catch(e){}},{once:true});
+
 function tone(f,t0,d,type,v,f2){const c=getAc(),t=c.currentTime+t0,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.02)}
 const thud=t=>{tone(900,t,.04,'sine',.25,120);tone(140,t,.07,'sine',.5,45)};
 const SFX={
-  single:['Simple',()=>thud(0)],
-  double:['Double',()=>{thud(0);thud(.11)}],
-  triple:['Triple',()=>{thud(0);thud(.11);thud(.22)}],
-  miss:['Raté',()=>tone(200,0,.15,'triangle',.25,70)],
-  bull:['Bull',()=>{tone(1318,0,.5,'sine',.3);tone(1976,0,.35,'sine',.12)}],
-  dbull:['D-Bull',()=>{tone(1318,0,.35,'sine',.3);tone(1760,.12,.35,'sine',.3);tone(2349,.24,.6,'sine',.3)}],
-  lowton:['Low ton',()=>[392,523,659].forEach((f,i)=>tone(f,i*.12,.25,'square',.12))],
-  highton:['High ton',()=>[523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.28,'square',.13))],
-  hat:['Hat trick',()=>{[0,.14,.28].forEach(t=>tone(1318,t,.3,'sine',.3));tone(1760,.45,.7,'sine',.3)}],
-  bed:['3 in a bed',()=>{[0,.1,.2].forEach(thud);tone(880,.35,.5,'sawtooth',.12)}],
-  t180:['180',()=>{[523,659,784,1047,1319].forEach((f,i)=>tone(f,i*.09,.4,'square',.14));tone(2093,.5,.9,'sine',.25)}],
-  bust:['Dépassé',()=>tone(300,0,.5,'sawtooth',.18,60)],
-  win:['Victoire',()=>{[523,659,784,659,784,1047].forEach((f,i)=>tone(f,i*.14,.3,'square',.13));tone(1568,.9,1,'sine',.25)}]
+  single:Array.of('Simple',()=>thud(0)),
+  double:Array.of('Double',()=>{thud(0);thud(.11)}),
+  triple:Array.of('Triple',()=>{thud(0);thud(.11);thud(.22)}),
+  miss:Array.of('Raté',()=>tone(200,0,.15,'triangle',.25,70)),
+  bull:Array.of('Bull',()=>{tone(1318,0,.5,'sine',.3);tone(1976,0,.35,'sine',.12)}),
+  dbull:Array.of('D-Bull',()=>{tone(1318,0,.35,'sine',.3);tone(1760,.12,.35,'sine',.3);tone(2349,.24,.6,'sine',.3)}),
+  lowton:Array.of('Low ton',()=>Array.of(392,523,659).forEach((f,i)=>tone(f,i*.12,.25,'square',.12))),
+  highton:Array.of('High ton',()=>Array.of(523,659,784,1047).forEach((f,i)=>tone(f,i*.1,.28,'square',.13))),
+  hat:Array.of('Hat trick',()=>{Array.of(0,.14,.28).forEach(t=>tone(1318,t,.3,'sine',.3));tone(1760,.45,.7,'sine',.3)}),
+  bed:Array.of('3 in a bed',()=>{Array.of(0,.1,.2).forEach(thud);tone(880,.35,.5,'sawtooth',.12)}),
+  t180:Array.of('180',()=>{Array.of(523,659,784,1047,1319).forEach((f,i)=>tone(f,i*.09,.4,'square',.14));tone(2093,.5,.9,'sine',.25)}),
+  bust:Array.of('Dépassé',()=>tone(300,0,.5,'sawtooth',.18,60)),
+  win:Array.of('Victoire',()=>{Array.of(523,659,784,659,784,1047).forEach((f,i)=>tone(f,i*.14,.3,'square',.13));tone(1568,.9,1,'sine',.25)})
 };
-function sfx(k,force){if(!snd&&!force)return;try{SFX[k][1]()}catch(e){}}
+function sfx(k,force){if(!snd&&!force)return;try{SFX[k].at(1)()}catch(e){}}
 const sfxFor=(sector,mult)=>sector===0?'miss':sector===25?(mult===2?'dbull':'bull'):mult===3?'triple':mult===2?'double':'single';
+
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function hitWords(label,sector,mult){
   if(label==='MISS'||sector===0)return'Raté !';
@@ -288,26 +331,41 @@ function hitWords(label,sector,mult){
   const w=FR[sector];return mult===3?'Triple '+w+' !':mult===2?'Double '+w+' !':cap(w)+' !'
 }
 const spoken=p=>{const f=profiles[p.pid];return(f&&f.phonetic&&f.phonetic.trim())||cap(p.name.toLowerCase())};
-// Réveille la sortie audio (enceinte Bluetooth en veille) pour ne pas perdre le début des phrases
-function wake(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();g.gain.value=.002;o.frequency.value=200;o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.6)}catch(e){}}
+
+function padBuf(ctx,raw){
+  const pre=Math.floor(ctx.sampleRate*0.25),post=Math.floor(ctx.sampleRate*0.08);
+  const out=ctx.createBuffer(raw.numberOfChannels,pre+raw.length+post,ctx.sampleRate);
+  for(let ch=0;ch<raw.numberOfChannels;ch++)out.getChannelData(ch).set(raw.getChannelData(ch),pre);
+  return out
+}
+function playBuf(buf){
+  const ctx=getAc();
+  if(curSrc){try{curSrc.stop()}catch(e){}}
+  const src=ctx.createBufferSource();
+  src.buffer=buf;src.connect(ctx.destination);curSrc=src;src.start(ctx.currentTime)
+}
+
 async function say(t,test){
   if(!snd&&!test)return;
   const st=(ok,m)=>{if(test){const e=$('elStatus');e.textContent=m;e.style.color=ok?'#4cc38a':'var(--r)'}};
   if(!voice.elApiKey){st(false,'Collez votre clé API ElevenLabs.');if(!test&&!warned){warned=true;toast('Voix : ajoutez votre clé ElevenLabs dans « Voix ».')}return}
-  wake();const ready=sleep(300);
+  const ctx=getAc();
+  if(memBuf[t]){playBuf(memBuf[t]);st(true,'Voix jouée.');return}
   try{
-    const cache='caches' in window?await caches.open('bsh-voice-v1'):null,key=new Request('https://voice.local/'+VOICE+'/'+encodeURIComponent(t));
-    const c=cache&&await cache.match(key);let blob;
-    if(c)blob=await c.blob();
+    const cache='caches' in window?await caches.open('bsh-voice-v2'):null,key=new Request('https://voice.local/'+VOICE+'/'+encodeURIComponent(t));
+    const c=cache&&await cache.match(key);let ab;
+    if(c)ab=await c.arrayBuffer();
     else{
       st(true,'Génération en cours…');
-      const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+VOICE,{method:'POST',headers:{'xi-api-key':voice.elApiKey,'Content-Type':'application/json',Accept:'audio/mpeg'},body:JSON.stringify({text:t,model_id:'eleven_flash_v2_5',language_code:'fr',voice_settings:{stability:.45,similarity_boost:.75,style:.25}})});
+      const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+VOICE,{method:'POST',headers:{'xi-api-key':voice.elApiKey,'Content-Type':'application/json',Accept:'audio/mpeg'},body:JSON.stringify({text:t,model_id:'eleven_multilingual_v2',voice_settings:{stability:.55,similarity_boost:.78,style:.20,use_speaker_boost:true}})});
       if(!res.ok){let d='HTTP '+res.status;try{const j=await res.json();if(j.detail&&j.detail.message)d=j.detail.message}catch(e){}throw new Error(d)}
       if(cache)await cache.put(key,res.clone());
-      blob=await res.blob()
+      ab=await res.arrayBuffer()
     }
-    await ready;A.pause();const old=A.src;A.src=URL.createObjectURL(blob);await A.play();
-    if(old.startsWith('blob:'))URL.revokeObjectURL(old);
+    const decoded=await ctx.decodeAudioData(ab);
+    const padded=padBuf(ctx,decoded);
+    memBuf[t]=padded;
+    playBuf(padded);
     st(true,'Voix jouée.')
   }catch(e){log('Voix : '+e.message);st(false,'Échec : '+e.message);if(!test)toast('Voix : '+e.message)}
 }
@@ -353,6 +411,7 @@ function ghLabel(){$('ghState').textContent=ghc.owner&&ghc.repo&&ghc.token?ghc.o
 let mode='501',players=[],cur=0,hist=[],locked=false,man=false,over=false,lastIds=[],selNum=20,editing=false,pendingWin=-1;
 const isX01=()=>mode==='501'||mode==='301';
 const fresh=(id)=>{const f=profiles[id];return{name:f.name,pid:id,score:mode==='501'?501:mode==='301'?301:mode==='clock'?1:0,ts:0,darts:[],turn:0,cr:{},st:{pts:0,d:0,t:0,b:0}}};
+
 const DARTS=[];for(let n=1;n<=20;n++)DARTS.push({l:'S'+n,v:n,c:n>=17?0:1},{l:'D'+n,v:2*n,d:1,c:1},{l:'T'+n,v:3*n,c:n>=18?0:1});
 DARTS.push({l:'Bull',v:25,c:2},{l:'D-Bull',v:50,d:1,c:2});
 const DPREF={40:0,32:1,36:1,16:2,20:2,24:2,8:3,50:4},fcache={};
@@ -367,12 +426,14 @@ function finish(rem,n,dOut){
   }
   return fcache[key]=best
 }
+
 function startGame(ids){
   mode=$('gMode').value;
   players=ids.map(fresh);cur=0;hist=[];locked=false;man=false;over=false;lastIds=ids;
   $('home').classList.remove('on');$('game').classList.add('on');
-  ledOff();upd();say('C\'est parti ! '+spoken(players[0])+', à toi de jouer.')
+  ledOff();upd();say('C\'est parti ! '+spoken(players.at(0))+', à toi de jouer.')
 }
+
 function hit(label,sector,mult){
   if(over)return;
   hist.push(structuredClone({players,cur,locked,label}));
@@ -380,6 +441,7 @@ function hit(label,sector,mult){
   if(!p.darts.length)p.ts=p.score;
   p.st.d++;if(mult===3&&sector<25)p.st.t++;if(sector===25)p.st.b++;
   let won=false,bust=false;
+
   if(isX01()){
     const start=mode==='501'?501:301;
     if($('dIn').checked&&p.score>=start&&!dbl)p.darts.push('hors double');
@@ -399,12 +461,13 @@ function hit(label,sector,mult){
     }
     if(CRICKET.every(n=>(p.cr[n]||0)>=3)&&players.every(o=>o===p||o.score<=p.score))won=true
   }
+
   const ton=isX01()&&!bust&&p.darts.length>=3&&p.turn>=100;
   let kind=sfxFor(sector,mult);
   if(bust)kind='bust';
   else if(won)kind='win';
   else if(p.darts.length>=3){
-    const same=sector>0&&p.darts.every(d=>d===p.darts[0]),bulls=p.darts.every(d=>d==='BULL'||d==='D-BULL');
+    const same=sector>0&&p.darts.every(d=>d===p.darts.at(0)),bulls=p.darts.every(d=>d==='BULL'||d==='D-BULL');
     if(isX01()&&p.turn===180)kind='t180';
     else if(bulls)kind='hat';
     else if(same)kind='bed';
@@ -414,12 +477,14 @@ function hit(label,sector,mult){
   sfx(kind);
   ledHit(sector,mult,ton||won);
   $('lastHit').textContent=label+' ('+pts+')';
+
   if(won){over=true;pendingWin=cur;say('Et c\'est gagné pour '+spoken(p)+' ! Tournée générale !');showEnd()}
   else if(bust)say('Ah, ça dépasse !');
   else if(p.darts.length>=3){locked=true;say(hitWords(label,sector,mult)+' C\'est bon, retirez vos flèches.')}
   else say(hitWords(label,sector,mult));
   upd()
 }
+
 function showEnd(){
   const p=players[pendingWin],avg=p.st.d?(p.st.pts/p.st.d*3).toFixed(1):'0.0';
   $('endTitle').textContent=p.name+' remporte la partie';
@@ -427,6 +492,7 @@ function showEnd(){
   $('dEnd').showModal()
 }
 $('dEnd').addEventListener('cancel',e=>e.preventDefault());
+
 async function commit(){
   const win=pendingWin;
   await pull();
@@ -444,6 +510,7 @@ $('endAgain').onclick=async()=>{$('dEnd').close();await commit();startGame(lastI
 $('endQuit').onclick=async()=>{$('dEnd').close();await commit();leave()};
 $('endUndo').onclick=()=>{$('dEnd').close();over=false;undo()};
 function leave(){ledOff();over=false;$('game').classList.remove('on');$('home').classList.add('on')}
+
 function undo(){
   if(!hist.length)return;
   const s=hist.pop();players=s.players;cur=s.cur;locked=s.locked;
@@ -455,6 +522,7 @@ function next(){
   cur=(cur+1)%players.length;players[cur].darts=[];players[cur].turn=0;
   locked=false;man=false;ledNext();say('Allez '+spoken(players[cur])+', à toi !');upd()
 }
+
 function upd(){
   const lk=locked||man;$('banner').style.display=lk?'block':'none';
   $('bLock').textContent=lk?'Reprendre':'Pause retrait';$('bLock').classList.toggle('on',lk);
@@ -468,7 +536,7 @@ function upd(){
   }).join('');
   const cb=$('cricket');cb.style.display=mode==='cricket'?'block':'none';
   if(mode==='cricket')cb.innerHTML='<table><tr><th>Joueur</th>'+CRICKET.map(n=>'<th>'+(n===25?'B':n)+'</th>').join('')+'</tr>'+
-    players.map(p=>'<tr><td>'+esc(p.name)+'</td>'+CRICKET.map(n=>{const c=p.cr[n]||0;return'<td><span class="mk'+(c>=3?' c':'')+'">'+['·','/','✕','✕'][c]+'</span></td>'}).join('')+'</tr>').join('')+'</table>'
+    players.map(p=>'<tr><td>'+esc(p.name)+'</td>'+CRICKET.map(n=>{const c=p.cr[n]||0;return'<td><span class="mk'+(c>=3?' c':'')+'">'+Array.of('·','/','✕','✕').at(c)+'</span></td>'}).join('')+'</tr>').join('')+'</table>'
 }
 $('pls').onclick=async e=>{
   const rm=e.target.closest('[data-rm]');
@@ -501,7 +569,8 @@ function avatar(f,s){const st='width:'+s+'px;height:'+s+'px;font-size:'+Math.rou
 function toSquare(file,size=96){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=size;const m=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,size,size);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.8))};img.onerror=()=>rej(new Error('Image illisible'));img.src=u})}
 const showNewAv=()=>{$('nAvPrev').innerHTML=newAv?avatar({avatar:newAv},44):'';$('nAv').textContent=newAv?'Changer la photo':'Ajouter une photo'};
 $('nAv').onclick=()=>{avTarget='new';$('avFile').click()};
-$('avFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const d=await toSquare(f);if(avTarget==='new'){newAv=d;showNewAv()}else if(profiles[avTarget]){profiles[avTarget].avatar=d;profiles[avTarget].updatedAt=Date.now();saveP();renderPlayers();push()}}catch(err){toast(err.message)}};
+$('avFile').onchange=async e=>{const f=e.target.files.at(0);e.target.value='';if(!f)return;try{const d=await toSquare(f);if(avTarget==='new'){newAv=d;showNewAv()}else if(profiles[avTarget]){profiles[avTarget].avatar=d;profiles[avTarget].updatedAt=Date.now();saveP();renderPlayers();push()}}catch(err){toast(err.message)}};
+
 function renderPlayers(){
   $('plist').innerHTML=live().map(id=>'<div class="pr" data-id="'+esc(id)+'"><button class="avb" data-av aria-label="Changer la photo de '+esc(profiles[id].name)+'">'+avatar(profiles[id],44)+'</button><div><div style="font-weight:700">'+esc(profiles[id].name)+'</div><input type="text" aria-label="Prononciation de '+esc(profiles[id].name)+'" placeholder="Prononciation" value="'+esc(profiles[id].phonetic||'')+'"></div><button class="b s" data-t>Écouter</button><button class="b s d" data-del>Supprimer</button></div>').join('')||'<p style="color:var(--m)">Aucun joueur.</p>'
 }
@@ -524,9 +593,9 @@ $('mPlayers').onclick=()=>{renderPlayers();$('dPlayers').showModal();pull().then
 // ---------- Nouvelle partie ----------
 $('mStart').onclick=async()=>{
   $('pick').innerHTML=live().map(id=>'<label class="chk"><input type="checkbox" value="'+esc(id)+'" checked>'+avatar(profiles[id],32)+esc(profiles[id].name)+'</label>').join('')||'<p style="color:var(--m)">Ajoutez d\'abord des joueurs.</p>';
-  $('x01opt').style.display=['501','301'].includes($('gMode').value)?'block':'none';$('dStart').showModal()
+  $('x01opt').style.display=Array.of('501','301').includes($('gMode').value)?'block':'none';$('dStart').showModal()
 };
-$('gMode').onchange=()=>$('x01opt').style.display=['501','301'].includes($('gMode').value)?'block':'none';
+$('gMode').onchange=()=>$('x01opt').style.display=Array.of('501','301').includes($('gMode').value)?'block':'none';
 $('gGo').onclick=()=>{const ids=[...document.querySelectorAll('#pick input:checked')].map(i=>i.value);if(!ids.length){toast('Cochez au moins un joueur.');return}$('dStart').close();startGame(ids)};
 
 // ---------- Statistiques ----------
@@ -538,7 +607,7 @@ function renderStats(){
   $('board').innerHTML=ids.length?ids.map((id,i)=>{const f=profiles[id];return'<div style="padding:8px 0;border-bottom:1px solid var(--l)"><div style="display:flex;justify-content:space-between"><strong style="display:flex;gap:8px;align-items:center">'+(i+1)+'. '+avatar(f,30)+esc(f.name)+'</strong><span>'+(f.wins||0)+' / '+(f.gamesPlayed||0)+' ('+rate(f)+' %)</span></div><div class="bar"><i style="width:'+rate(f)+'%"></i></div><div class="pm">Moyenne '+avg(f)+' · Triples '+(f.triples||0)+' · Bulls '+(f.bulls||0)+' · Meilleur 501 : '+best(f)+'</div></div>'}).join(''):'Aucun joueur.';
   const o=ids.map(id=>'<option value="'+esc(id)+'">'+esc(profiles[id].name)+'</option>').join('');
   const a=$('du1').value,b=$('du2').value;$('du1').innerHTML=o;$('du2').innerHTML=o;
-  $('du1').value=profiles[a]&&!profiles[a].deleted?a:ids[0]||'';$('du2').value=profiles[b]&&!profiles[b].deleted?b:ids[1]||ids[0]||'';duel()
+  $('du1').value=profiles[a]&&!profiles[a].deleted?a:ids.at(0)||'';$('du2').value=profiles[b]&&!profiles[b].deleted?b:ids.at(1)||ids.at(0)||'';duel()
 }
 function duel(){
   const p=profiles[$('du1').value],q=profiles[$('du2').value];
@@ -550,11 +619,12 @@ $('du1').onchange=duel;$('du2').onchange=duel;
 $('mStats').onclick=()=>{renderStats();$('dStats').showModal();pull().then(renderStats)};
 
 // ---------- Réglages ----------
-Object.keys(SFX).forEach(k=>{const b=document.createElement('button');b.className='b s';b.textContent=SFX[k][0];b.onclick=()=>sfx(k,true);$('sfxList').appendChild(b)});
+Object.keys(SFX).forEach(k=>{const b=document.createElement('button');b.className='b s';b.textContent=SFX[k].at(0);b.onclick=()=>sfx(k,true);$('sfxList').appendChild(b)});
 $('mVoice').onclick=()=>{$('elKey').value=voice.elApiKey;$('elStatus').textContent='';$('dVoice').showModal()};
 const readVoice=()=>{voice.elApiKey=$('elKey').value.trim();store('granboard_voice_config',voice)};
-$('elRun').onclick=()=>{readVoice();say($('elTest').value.trim()||'Triple vingt !',true)};
+$('elRun').onclick=()=>{readVoice();say($('elTest').value.trim()||'Double douze !',true)};
 $('elSave').onclick=()=>{readVoice();warned=false;$('dVoice').close();toast('Clé enregistrée')};
+
 $('mGit').onclick=()=>{$('ghO').value=ghc.owner;$('ghR').value=ghc.repo;$('ghT').value=ghc.token;$('dGit').showModal()};
 const readGh=()=>{ghc={owner:$('ghO').value.trim(),repo:$('ghR').value.trim(),token:$('ghT').value.trim()};store('granboard_gh_config',ghc);ghLabel()};
 $('ghSave').onclick=async()=>{readGh();$('dGit').close();if(await push())toast('GitHub relié et synchronisé')};
@@ -563,13 +633,15 @@ $('ghLink').onclick=()=>{
   const u=location.origin+location.pathname+'#gh='+encodeURIComponent(btoa(ghc.owner+'|'+ghc.repo+'|'+ghc.token));
   (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Lien copié')).catch(()=>prompt('Copiez ce lien :',u))
 };
+
 $('mLog').onclick=()=>{$('logBox').textContent=logs.join('\n')||'Aucun événement.';$('dLog').showModal()};
 $('mLed').onclick=ledOff;
 function updLedBtn(){$('mLedT').textContent='Pilotage des LED : '+(ledOn?'activé':'désactivé')}
-$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led',{on:ledOn});updLedBtn();toast(ledOn?'LED activées : reconnectez la cible':'LED désactivées')};
+$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led',{on:ledOn});updLedBtn();toast(ledOn?'LED activées':'LED désactivées')};
 updLedBtn();
-$('bConn').onclick=()=>{if(!connected)connectBoard()};
-$('bSnd').onclick=()=>{snd=!snd;$('bSnd').textContent='Son : '+(snd?'oui':'non');if(!snd)A.pause()};
+
+$('bConn').onclick=connectBoard;
+$('bSnd').onclick=()=>{snd=!snd;$('bSnd').textContent='Son : '+(snd?'oui':'non');if(!snd&&curSrc){try{curSrc.stop()}catch(e){}}};
 
 ghLabel();pull();log('Application prête');
 </script>
