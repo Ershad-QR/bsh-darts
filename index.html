@@ -179,7 +179,6 @@ const COL=Array.of({c:'#e0483e',led:Array.of(125,0,0)},{c:'#2fb37a',led:Array.of
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const withTimeout=(p,ms,msg)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]);
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const logs=[];
@@ -202,7 +201,7 @@ try{
 const live=()=>Object.keys(profiles).filter(k=>profiles[k]&&!profiles[k].deleted);
 const saveP=()=>store('granboard_profiles',profiles);
 
-// ---------- Cible Bluetooth (Ordre séquentiel propre : NOTIF d'abord -> Vert -> puis WRITE LED) ----------
+// ---------- Cible Bluetooth (Connexion 100% identique au CodePen fonctionnel) ----------
 let dev=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,dropToken=0,ledOn=load('bsh_led',{on:true}).on;
 function setBle(ok){connected=ok;if(ok)$('bleErr').style.display='none';$('dot').classList.toggle('ok',ok);$('connTxt').textContent=ok?'Cible connectée':'Connecter la cible'}
 
@@ -212,7 +211,7 @@ function sendRaw(a){
     const d=new Uint8Array(a);
     if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);
     else await wc.writeValue(d);
-  }).catch(e=>log('Écriture cible : '+e.message));
+  }).catch(e=>log('LED : '+e.message));
 }
 function sendLed(a){if(ledOn)sendRaw(a)}
 function ledOff(){clearTimeout(ledTimer);sendRaw(Array.of(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))}
@@ -229,46 +228,33 @@ function ledHit(sector,mult,ton){
 function ledNext(){if(!wc||!ledOn)return;clearTimeout(ledTimer);sendLed(Array.of(0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1));ledTimer=setTimeout(ledOff,1000)}
 
 async function link(){
-  for(let attempt=1;attempt<=3;attempt++){
+  const server=await dev.gatt.connect();
+  const service=await server.getPrimaryService(SVC);
+  const char=await service.getCharacteristic(NOTIF);
+  await char.startNotifications();
+  setBle(true);
+  log('Cible connectée : '+(dev.name||'GRANBOARD'));
+  char.removeEventListener('characteristicvaluechanged',onVal);
+  char.addEventListener('characteristicvaluechanged',onVal);
+  // Ouverture différée et non-bloquante du canal LED pour ne jamais perturber les touches
+  setTimeout(async()=>{
     try{
-      log('1/4 Connexion GATT (essai '+attempt+')…');
-      const srv=await withTimeout(dev.gatt.connect(),6000,'Délai GATT dépassé');
-      await sleep(300); // Laisse la négociation BLE du Pixel 8 Pro se stabiliser
-      log('2/4 Ouverture du service GranBoard…');
-      const sv=await withTimeout(srv.getPrimaryService(SVC),5000,'Service introuvable');
-      log('3/4 Activation des capteurs de fléchettes…');
-      const n=await withTimeout(sv.getCharacteristic(NOTIF),4000,'Capteur introuvable');
-      await withTimeout(n.startNotifications(),4000,'startNotifications bloqué');
-      n.removeEventListener('characteristicvaluechanged',onVal);
-      n.addEventListener('characteristicvaluechanged',onVal);
-      // Capteurs actifs -> le point passe immédiatement au VERT !
-      setBle(true);
-      log('✅ Capteurs actifs ! Ouverture du canal LED…');
-      await sleep(250);
-      try{
-        wc=await withTimeout(sv.getCharacteristic(WRITE),3000,'Canal LED lent');
-        log('4/4 Canal LED prêt');
-        if(ledOn)ledOff();
-      }catch(le){
-        wc=null;
-        log('LED non disponibles ('+le.message+'), les fléchettes restent actives.');
-      }
-      return;
+      wc=await service.getCharacteristic(WRITE);
+      log('Canal LED actif');
+      if(ledOn)ledOff();
     }catch(e){
-      log('Échec essai '+attempt+' : '+e.message);
-      if(attempt===3)throw e;
-      try{if(dev.gatt.connected)dev.gatt.disconnect()}catch(_){}
-      await sleep(900*attempt);
+      wc=null;
+      log('Canal LED ignoré : '+e.message);
     }
-  }
+  },600);
 }
 
 function bleFail(e){
   const m=e.message||String(e);log('Bluetooth : '+(e.name||'')+' - '+m);
   if(/cancel/i.test(m))return;
   let h='Erreur : '+m;
-  if(/No Services matching|not found in device/i.test(m))h+=" → Ce n'est pas la bonne cible. Choisissez « GRANBOARD » dans la liste.";
-  else if(e.name==='NetworkError'||/GATT|connect|Délai|bloqué/i.test(m))h+=" → Coupez/rallumez le Bluetooth du téléphone et vérifiez que l'appli officielle GranBoard est bien fermée.";
+  if(/No Services matching|not found in device/i.test(m))h+=" → Choisissez bien l'appareil « GRANBOARD » dans la liste.";
+  else if(e.name==='NetworkError'||/GATT|connect/i.test(m))h+=" → Vérifiez que l'appli officielle GranBoard est fermée, puis réessayez.";
   else if(e.name==='SecurityError'||e.name==='NotAllowedError')h+=" → Autorisez le Bluetooth et « Appareils à proximité » pour Chrome.";
   const el=$('bleErr');el.textContent=h;el.style.display='block'
 }
@@ -278,13 +264,14 @@ async function connectBoard(){
   dropToken++;
   try{
     if(dev){dev.removeEventListener('gattserverdisconnected',onDrop);if(dev.gatt&&dev.gatt.connected){try{dev.gatt.disconnect()}catch(e){}}}
-    log('Recherche de la cible GRANBOARD…');
+    log('Recherche de la cible…');
     dev=await navigator.bluetooth.requestDevice({
-      filters:Array.of({services:Array.of(SVC)},{namePrefix:'GRAN'},{namePrefix:'Gran'}),
+      acceptAllDevices:true,
       optionalServices:Array.of(SVC)
     });
     dev.addEventListener('gattserverdisconnected',onDrop);
     await link();
+    sfx('bull');
     toast('Cible connectée !');
     say('Cible connectée. Bon jeu !');
   }catch(e){bleFail(e)}
@@ -304,10 +291,9 @@ async function onDrop(){
 function onVal(e){const v=e.target.value;let s='';for(let i=0;i<v.byteLength;i++){const b=v.getUint8(i);if(b>=32&&b<=126)s+=String.fromCharCode(b)}signal(s.trim())}
 function signal(code){
   $('lastRaw').textContent='Signal : "'+code+'"';
-  if(!code)return;
-  if(code.startsWith('GB')){log('Firmware cible reçu : '+code);if(ledOn&&wc)ledOff();return}
+  if(!code||code.startsWith('GB'))return;
   const h=MAP[code];
-  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);toast('Impact détecté : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
+  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);toast('Impact : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
   if(h&&h.sector===-1){next();return}
   if(!h){log('Signal inconnu ignoré : '+code);return}
   if(locked||man)return;
