@@ -129,6 +129,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
   <label for="elKey">Clé API ElevenLabs (sk_…)</label><input type="password" id="elKey" autocomplete="off">
   <p style="color:var(--m);font-size:.8rem;margin:6px 0 0">Voix utilisée : <code>8qPDlLCTodAerFLrTwhm</code>. Les phrases déjà générées sont gardées sur l'appareil et ne consomment plus de crédits.</p>
   <label for="elTest">Phrase de test</label><input type="text" id="elTest" value="Triple vingt ! Allez Kan-dalf, à toi de jouer !">
+  <h3>Sons</h3><div id="sfxList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   <p id="elStatus" style="min-height:1.3em;font-size:.85rem;margin:8px 0 0"></p>
   <div class="row" style="margin-top:10px"><button class="b" id="elRun">Tester</button><button class="b p" id="elSave">Enregistrer</button><button class="b" data-x>Fermer</button></div>
 </dialog>
@@ -235,7 +236,7 @@ function signal(code){
   $('lastRaw').textContent='Signal : "'+code+'"';
   if(!code||code.startsWith('GB'))return;
   const h=MAP[code];
-  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);tick();ledHit(h.sector,h.mult,false)}return}
+  if(!$('game').classList.contains('on')){if(h&&h.sector>0){log('Test cible : '+h.label);sfx(sfxFor(h.sector,h.mult));ledHit(h.sector,h.mult,false)}return}
   if(h&&h.sector===-1){next();return}
   if(!h){log('Signal inconnu ignoré : '+code);return}
   if(locked||man)return;
@@ -245,7 +246,26 @@ function signal(code){
 // ---------- Voix ----------
 let ac=null,snd=true,warned=false;const A=new Audio();
 document.addEventListener('pointerdown',()=>{A.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';A.play().catch(()=>{})},{once:true});
-function tick(){if(!snd)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(45,t+.06);g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.01,t+.06);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.07)}catch(e){}}
+const getAc=()=>{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac};
+function tone(f,t0,d,type,v,f2){const c=getAc(),t=c.currentTime+t0,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.02)}
+const thud=t=>{tone(900,t,.04,'sine',.25,120);tone(140,t,.07,'sine',.5,45)};
+const SFX={
+  single:['Simple',()=>thud(0)],
+  double:['Double',()=>{thud(0);thud(.11)}],
+  triple:['Triple',()=>{thud(0);thud(.11);thud(.22)}],
+  miss:['Raté',()=>tone(200,0,.15,'triangle',.25,70)],
+  bull:['Bull',()=>{tone(1318,0,.5,'sine',.3);tone(1976,0,.35,'sine',.12)}],
+  dbull:['D-Bull',()=>{tone(1318,0,.35,'sine',.3);tone(1760,.12,.35,'sine',.3);tone(2349,.24,.6,'sine',.3)}],
+  lowton:['Low ton',()=>[392,523,659].forEach((f,i)=>tone(f,i*.12,.25,'square',.12))],
+  highton:['High ton',()=>[523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.28,'square',.13))],
+  hat:['Hat trick',()=>{[0,.14,.28].forEach(t=>tone(1318,t,.3,'sine',.3));tone(1760,.45,.7,'sine',.3)}],
+  bed:['3 in a bed',()=>{[0,.1,.2].forEach(thud);tone(880,.35,.5,'sawtooth',.12)}],
+  t180:['180',()=>{[523,659,784,1047,1319].forEach((f,i)=>tone(f,i*.09,.4,'square',.14));tone(2093,.5,.9,'sine',.25)}],
+  bust:['Dépassé',()=>tone(300,0,.5,'sawtooth',.18,60)],
+  win:['Victoire',()=>{[523,659,784,659,784,1047].forEach((f,i)=>tone(f,i*.14,.3,'square',.13));tone(1568,.9,1,'sine',.25)}]
+};
+function sfx(k,force){if(!snd&&!force)return;try{SFX[k][1]()}catch(e){}}
+const sfxFor=(sector,mult)=>sector===0?'miss':sector===25?(mult===2?'dbull':'bull'):mult===3?'triple':mult===2?'double':'single';
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function hitWords(label,sector,mult){
   if(label==='MISS'||sector===0)return'Raté !';
@@ -344,7 +364,6 @@ function hit(label,sector,mult){
   const p=players[cur],pts=sector*mult,dbl=mult===2;
   if(!p.darts.length)p.ts=p.score;
   p.st.d++;if(mult===3&&sector<25)p.st.t++;if(sector===25)p.st.b++;
-  tick();
   let won=false,bust=false;
   if(isX01()){
     const start=mode==='501'?501:301;
@@ -366,6 +385,18 @@ function hit(label,sector,mult){
     if(CRICKET.every(n=>(p.cr[n]||0)>=3)&&players.every(o=>o===p||o.score<=p.score))won=true
   }
   const ton=isX01()&&!bust&&p.darts.length>=3&&p.turn>=100;
+  let kind=sfxFor(sector,mult);
+  if(bust)kind='bust';
+  else if(won)kind='win';
+  else if(p.darts.length>=3){
+    const same=sector>0&&p.darts.every(d=>d===p.darts[0]),bulls=p.darts.every(d=>d==='BULL'||d==='D-BULL');
+    if(isX01()&&p.turn===180)kind='t180';
+    else if(bulls)kind='hat';
+    else if(same)kind='bed';
+    else if(isX01()&&p.turn>=140)kind='highton';
+    else if(isX01()&&p.turn>=100)kind='lowton'
+  }
+  sfx(kind);
   ledHit(sector,mult,ton||won);
   $('lastHit').textContent=label+' ('+pts+')';
   if(won){over=true;pendingWin=cur;say('Et c\'est gagné pour '+spoken(p)+' ! Tournée générale !');showEnd()}
@@ -504,6 +535,7 @@ $('du1').onchange=duel;$('du2').onchange=duel;
 $('mStats').onclick=()=>{renderStats();$('dStats').showModal();pull().then(renderStats)};
 
 // ---------- Réglages ----------
+Object.keys(SFX).forEach(k=>{const b=document.createElement('button');b.className='b s';b.textContent=SFX[k][0];b.onclick=()=>sfx(k,true);$('sfxList').appendChild(b)});
 $('mVoice').onclick=()=>{$('elKey').value=voice.elApiKey;$('elStatus').textContent='';$('dVoice').showModal()};
 const readVoice=()=>{voice.elApiKey=$('elKey').value.trim();store('granboard_voice_config',voice)};
 $('elRun').onclick=()=>{readVoice();say($('elTest').value.trim()||'Triple vingt !',true)};
