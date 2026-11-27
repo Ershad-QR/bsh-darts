@@ -341,6 +341,14 @@ function setBle(ok){
 // par le bloc ci-dessous. Cette zone contient connectBoard et onBleDisconnect.
 // Rien d'autre à modifier : les variables utilisées existent déjà dans votre code.
 
+// MISE À JOUR DU CORRECTIF DE CONNEXION (2e version : tentatives complètes + activation des notifications fiabilisée)
+//
+// MODE D'EMPLOI :
+// 1. Dans votre index.html, repérez la ligne « // ---------- Connexion Bluetooth fiabilisée ---------- ».
+// 2. Sélectionnez tout depuis CETTE LIGNE (incluse) jusqu'à la ligne « // Reçoit les octets bruts... » (exclue).
+// 3. Supprimez la sélection, puis collez à la place TOUT le bloc ci-dessous (à partir de la ligne « // ---------- Connexion Bluetooth fiabilisée »).
+// N'ajoutez aucune autre ligne « async function connectBoard(){ » : le bloc contient déjà la bonne.
+
 // ---------- Connexion Bluetooth fiabilisée ----------
 const withTimeout=(p,ms,step)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error('Délai dépassé : '+step),{name:'TimeoutError'})),ms))]);
 let connecting=false,manualDrop=false,reconnTok=0;
@@ -348,6 +356,7 @@ let connecting=false,manualDrop=false,reconnTok=0;
 function showBleErr(msg){const el=$('bleErr');el.textContent=msg;el.style.display='block'}
 function bleHint(e){
   const m=e.message||String(e);
+  if(/notifications/.test(m))return m+" → La cible est connectée mais ne confirme pas l'activation. Regardez si Android affiche une demande d'association Bluetooth (barre de notifications) et acceptez-la. Sinon : oubliez la cible dans Réglages > Bluetooth, coupez puis réactivez le Bluetooth, éteignez et rallumez la cible, et fermez le site ouvert sur votre PC.";
   if(e.name==='TimeoutError')return m+" → La cible ne répond pas : éteignez-la 10 s puis rallumez-la, coupez puis réactivez le Bluetooth du téléphone, fermez l'appli GranBoard.";
   if(/No Services matching|not found in device/i.test(m))return m+" → Choisissez bien l'appareil « GRANBOARD » dans la liste.";
   if(e.name==='NetworkError'||/GATT|connect/i.test(m))return m+" → La cible est sans doute déjà connectée ailleurs (appli GranBoard, autre téléphone, autre onglet). Fermez-les puis réessayez.";
@@ -355,32 +364,43 @@ function bleHint(e){
   return m
 }
 
-// Ouvre la liaison : connexion GATT (avec nouvelles tentatives), service, canal des touches, notifications.
-async function openLink(device,tries=3){
-  let server=null,last=null;
-  for(let i=1;i<=tries&&!server;i++){
-    try{
-      log('Connexion GATT (essai '+i+'/'+tries+')…');
-      server=await withTimeout(device.gatt.connect(),12000,'connexion GATT');
-    }catch(e){
-      last=e;log('Essai '+i+' : '+e.message);
-      try{device.gatt.disconnect()}catch(_){}
-      if(i<tries)await sleep(900*i)
-    }
-  }
-  if(!server)throw last;
+// Une tentative complète : connexion GATT, service, canal des touches, notifications.
+async function linkOnce(device,label){
+  $('connTxt').textContent='Connexion… '+label;
+  log('Connexion GATT…');
+  const server=await withTimeout(device.gatt.connect(),12000,'connexion GATT');
   const service=await withTimeout(server.getPrimaryService(GRAN_SERVICE),10000,'service de la cible');
+  log('Service trouvé');
   const char=await withTimeout(service.getCharacteristic(GRAN_NOTIFY),10000,'canal des touches');
+  const pr=char.properties||{};
+  log('Canal trouvé (notify:'+pr.notify+', indicate:'+pr.indicate+', read:'+pr.read+')');
+  await sleep(800); // laisse Android terminer la découverte des services avant d'écrire le descripteur
   if(bleChar&&bleChar!==char)bleChar.removeEventListener('characteristicvaluechanged',onBleData);
   char.removeEventListener('characteristicvaluechanged',onBleData);
   char.addEventListener('characteristicvaluechanged',onBleData);
-  await withTimeout(char.startNotifications(),10000,'activation des notifications');
+  log('Activation des notifications…');
+  const st=char.startNotifications();st.catch(()=>{});
+  await withTimeout(st,8000,'activation des notifications');
   bleDev=device;bleChar=char;activeService=service;wc=null;
   rxBuf='';rxReadyAt=Date.now()+2000;
   setBle(true);
   log('Cible connectée : '+(device.name||'GRANBOARD'));
   // Coupe l'arc-en-ciel une seconde après la connexion, une fois la liaison stabilisée (et seulement si les LED sont activées)
   if(ledOn)setTimeout(()=>{if(activeService===service)ledOff()},1000);
+}
+
+// Plusieurs tentatives COMPLÈTES : en cas d'échec on coupe la liaison, on attend, et on recommence depuis zéro.
+async function openLink(device,tries=3){
+  let last=null;
+  for(let round=1;round<=tries;round++){
+    try{await linkOnce(device,round+'/'+tries);return}
+    catch(e){
+      last=e;log('Tentative '+round+'/'+tries+' échouée : '+e.message);
+      try{device.gatt.disconnect()}catch(_){}
+      if(round<tries)await sleep(1500)
+    }
+  }
+  throw last
 }
 
 async function connectBoard(){
