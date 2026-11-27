@@ -87,7 +87,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
   <div class="menu">
     <button class="b p" id="mStart" style="font-size:1.15rem;padding:16px">Nouvelle partie</button>
     <button class="b" id="mPlayers">Joueurs et prononciation</button>
-    <button class="b" id="mJobs">Configuration des jobs <small>301 Fantasy</small></button>
+    <button class="b" id="mJobs">Configuration des jobs <small>Dart Fantasy</small></button>
     <button class="b" id="mStats">Statistiques et duels</button>
     <button class="b" id="mVoice">Voix <small>ElevenLabs</small></button>
     <button class="b" id="mGit">Synchronisation GitHub <small id="ghState">non reliée</small></button>
@@ -232,7 +232,7 @@ const COL=Array.of(
 );
 
 // =====================================================================
-// ---------- 301 FANTASY : RÉGLAGES (modifiez librement ces valeurs) ----------
+// ---------- Dart FANTASY : RÉGLAGES (modifiez librement ces valeurs) ----------
 // Dans les descriptions, {v}, {v2}, {v3} sont remplacés par les valeurs du skill.
 // =====================================================================
 const FANTASY={
@@ -735,7 +735,7 @@ async function keepAwake(on){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&$('game').classList.contains('on'))keepAwake(true)});
 
-// ---------- 301 Fantasy : moteur des skills ----------
+// ---------- Dart Fantasy : moteur des skills ----------
 const isFantasy=()=>mode==='fantasy';
 const dartLimit=p=>3+(p.extra||0);
 const dartsLeft=p=>dartLimit(p)-p.darts.length;
