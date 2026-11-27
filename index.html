@@ -181,9 +181,7 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
   <p id="jMsg" style="min-height:1.2em;font-size:.82rem;margin:6px 0 0;color:var(--a)"></p>
   <button class="b" data-x style="width:100%;margin-top:8px">Fermer</button>
 </dialog>
-
 <dialog id="dPick"><h2 id="pickTitle"></h2><p id="pickInfo" style="color:var(--m);font-size:.85rem;margin:0 0 8px"></p><div id="pickList" class="menu"></div><button class="b" data-x style="width:100%;margin-top:8px">Annuler</button></dialog>
-
 <dialog id="dLedLab"><h2>Atelier LED</h2>
   <p style="color:var(--m);font-size:.8rem;margin:0 0 8px">Chaque bouton envoie une commande à la cible. Notez lesquels arrêtent l'arc-en-ciel : les octets envoyés apparaissent dans le Journal.</p>
   <div class="menu" id="labBtns">
@@ -198,7 +196,6 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
   <input type="text" id="labHex" placeholder="14 00 00 00 00 00 00 00 00 00 10 00 14 00 00 01" autocomplete="off">
   <div class="row" style="margin-top:8px"><button class="b p" id="labSend">Envoyer</button><button class="b" data-x>Fermer</button></div>
 </dialog>
-
 <dialog id="dAsk"><p id="askMsg" style="margin-top:0"></p><div class="row"><button class="b p" id="askY">Confirmer</button><button class="b" id="askN">Annuler</button></div></dialog>
 <dialog id="dLog"><h2>Journal</h2><pre id="logBox"></pre><button class="b" data-x style="width:100%;margin-top:10px">Fermer</button></dialog>
 <input type="file" id="avFile" accept="image/*" hidden>
@@ -221,15 +218,7 @@ const FRAME_RE=/(?:1[01]|\d)\.\d@|BTN@|OUT@/g;
 
 const RING=Array.of(20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5),CRICKET=Array.of(20,19,18,17,16,15,25);
 const FR=Array.of('','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf','vingt');
-// Couleurs recalibrées pour correspondre exactement aux profils sur les LED de la cible (le vert avait 64 de bleu qui dominait)
-const COL=Array.of(
-  {c:'#e0483e',led:Array.of(128,0,0)},   // Rouge
-  {c:'#2fb37a',led:Array.of(0,128,0)},   // Vert franc (0 bleu)
-  {c:'#e0a526',led:Array.of(128,95,0)},  // Jaune / Or
-  {c:'#4a90d9',led:Array.of(0,30,128)},  // Bleu
-  {c:'#b36ad9',led:Array.of(110,0,128)}, // Violet
-  {c:'#33b8c4',led:Array.of(0,128,85)}   // Cyan
-);
+const COL=Array.of({c:'#e0483e',led:Array.of(125,0,0)},{c:'#2fb37a',led:Array.of(0,125,64)},{c:'#e0a526',led:Array.of(125,80,0)},{c:'#4a90d9',led:Array.of(0,64,125)},{c:'#b36ad9',led:Array.of(100,0,125)},{c:'#33b8c4',led:Array.of(0,110,125)});
 
 // =====================================================================
 // ---------- 301 FANTASY : RÉGLAGES (modifiez librement ces valeurs) ----------
@@ -242,9 +231,8 @@ const FANTASY={
   catchUpGap:60,    // retard sur le leader qui donne un bonus de rattrapage
   catchUpMana:1,    // bonus de rattrapage au début de la volée
   minScore:2,       // un skill ne peut jamais faire descendre un score sous cette valeur (pas de victoire par skill)
-  drawExclude:Array.of(20)  // numéros jamais tirés au sort (le 20 tombe trop facilement)
+  drawExclude:[20]  // numéros jamais tirés au sort (le 20 tombe trop facilement)
 };
-
 const JOBS=[
  {id:'chevalier',name:'Chevalier',role:'Défense',emoji:'🛡️',skills:[
   {id:'garde',name:'Garde',cost:2,desc:'Bouclier : bloque le prochain skill qui te vise'},
@@ -406,8 +394,8 @@ function onBleData(event){
   let end=0;
   for(const m of rxBuf.matchAll(FRAME_RE)){
     if(m.index>end)log('Ignoré : "'+rxBuf.slice(end,m.index)+'"');
-    end=m.index+m.at(0).length;
-    signal(m.at(0));
+    end=m.index+m[0].length;
+    signal(m[0]);
   }
   rxBuf=rxBuf.slice(end);
   const at=rxBuf.lastIndexOf('@');
@@ -435,20 +423,18 @@ function sendRawLed(a){
   }).catch(e=>log('LED : '+e.message));
 }
 function sendLed(a){if(ledOn)sendRawLed(a)}
-
 const LED_POS={25:0,1:28,2:49,3:55,4:34,5:22,6:40,7:1,8:7,9:16,10:43,11:10,12:19,13:37,14:13,15:46,16:4,17:52,18:31,19:58,20:25};
-const led16=(cmd,rgb,pos,dur,flag,rgb2)=>Array.of(cmd,rgb.at(0),rgb.at(1),rgb.at(2),...(rgb2||Array.of(0,0,0)),0,0,0,pos,0,dur,0,0,flag);
-const LED_CLEAR_RING=led16(0x14,Array.of(0,0,0),0x10,0x14,1); // anneau entier en noir, persistant
+const led16=(cmd,rgb,pos,dur,flag,rgb2)=>Array.of(cmd,rgb[0],rgb[1],rgb[2],...(rgb2||[0,0,0]),0,0,0,pos,0,dur,0,0,flag);
+const LED_CLEAR_RING=led16(0x14,[0,0,0],0x10,0x14,1); // anneau entier en noir, persistant
 const LED_CLEAR_NUMS=new Array(20).fill(0);          // format 20 octets : tous les numéros éteints
-
 // Tout éteindre (y compris l'arc-en-ciel) : toujours envoyé, même si le pilotage des LED est désactivé.
+// Avant : la commande envoyée était un « clignotement simple en noir sur la bulle », qui n'éteignait rien.
 function ledOff(){clearTimeout(ledTimer);sendRawLed(LED_CLEAR_RING);sendRawLed(LED_CLEAR_NUMS)}
-
 function ledHit(sector,mult,ton){
   if(!ledOn||!activeService)return;clearTimeout(ledTimer);
-  if(ton){sendLed(led16(0x17,Array.of(0,255,0),0x10,0x14,1));ledTimer=setTimeout(ledOff,2200);return}          // ton / victoire : anneau vert qui clignote
-  if(sector===25&&mult===2){sendLed(led16(0x11,Array.of(255,170,0),0x10,0x05,0,Array.of(255,0,0)));ledTimer=setTimeout(ledOff,1800);return} // double bull : vague or et rouge
-  if(sector===25){sendLed(led16(0x17,Array.of(0,200,255),0x10,0x14,1));ledTimer=setTimeout(ledOff,1400);return}  // bull : anneau bleu qui clignote
+  if(ton){sendLed(led16(0x17,[0,255,0],0x10,0x14,1));ledTimer=setTimeout(ledOff,2200);return}          // ton / victoire : anneau vert qui clignote
+  if(sector===25&&mult===2){sendLed(led16(0x11,[255,170,0],0x10,0x05,0,[255,0,0]));ledTimer=setTimeout(ledOff,1800);return} // double bull : vague or et rouge
+  if(sector===25){sendLed(led16(0x17,[0,200,255],0x10,0x14,1));ledTimer=setTimeout(ledOff,1400);return}  // bull : anneau bleu qui clignote
   if(sector>=1&&sector<=20){ // seule la LED du numéro touché : 1, 2 ou 3 clignotements selon simple/double/triple, puis extinction
     const c=COL[cur%COL.length].led.map(v=>Math.min(255,v*2));
     sendLed(led16(Math.min(3,Math.max(1,mult)),c,LED_POS[sector],0x14,0))
@@ -479,41 +465,28 @@ function signal(code){
   hit(h.label,h.sector,h.mult);
 }
 
-// ---------- Voix & Sons (Amplificateur Maître + Normalisation pour un volume fort et net) ----------
-let ac=null,masterOut=null,snd=true,warned=false,curSrc=null;
+// ---------- Voix (Anti-coupure 250 ms via Web Audio API) ----------
+let ac=null,snd=true,warned=false,curSrc=null;
 const memBuf={};
-const getAc=()=>{
-  if(!ac){
-    ac=new(window.AudioContext||window.webkitAudioContext)();
-    // Compresseur + préampli maître : booste fortement les bruitages et la voix sans saturer le haut-parleur
-    const comp=ac.createDynamicsCompressor();
-    comp.threshold.value=-18;comp.knee.value=12;comp.ratio.value=4;comp.attack.value=0.003;comp.release.value=0.15;
-    const pre=ac.createGain();
-    pre.gain.value=2.8;
-    pre.connect(comp);comp.connect(ac.destination);
-    masterOut=pre;
-  }
-  if(ac.state==='suspended')ac.resume();
-  return ac;
-};
+const getAc=()=>{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac};
 document.addEventListener('pointerdown',()=>{try{getAc()}catch(e){}},{once:true});
 
-function tone(f,t0,d,type,v,f2){const c=getAc(),t=c.currentTime+t0,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(Math.min(1,v*2.2),t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(masterOut||c.destination);o.start(t);o.stop(t+d+.02)}
-const thud=t=>{tone(900,t,.045,'triangle',.45,120);tone(150,t,.08,'sine',.85,48)};
+function tone(f,t0,d,type,v,f2){const c=getAc(),t=c.currentTime+t0,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.02)}
+const thud=t=>{tone(900,t,.04,'sine',.25,120);tone(140,t,.07,'sine',.5,45)};
 const SFX={
   single:Array.of('Simple',()=>thud(0)),
   double:Array.of('Double',()=>{thud(0);thud(.11)}),
   triple:Array.of('Triple',()=>{thud(0);thud(.11);thud(.22)}),
-  miss:Array.of('Raté',()=>tone(200,0,.18,'sawtooth',.45,70)),
-  bull:Array.of('Bull',()=>{tone(1318,0,.5,'triangle',.5);tone(1976,0,.35,'sine',.3)}),
-  dbull:Array.of('D-Bull',()=>{tone(1318,0,.35,'triangle',.5);tone(1760,.12,.35,'triangle',.5);tone(2349,.24,.6,'triangle',.55)}),
-  lowton:Array.of('Low ton',()=>Array.of(392,523,659).forEach((f,i)=>tone(f,i*.12,.25,'square',.3))),
-  highton:Array.of('High ton',()=>Array.of(523,659,784,1047).forEach((f,i)=>tone(f,i*.1,.28,'square',.32))),
-  hat:Array.of('Hat trick',()=>{Array.of(0,.14,.28).forEach(t=>tone(1318,t,.3,'triangle',.5));tone(1760,.45,.7,'triangle',.55)}),
-  bed:Array.of('3 in a bed',()=>{Array.of(0,.1,.2).forEach(thud);tone(880,.35,.5,'sawtooth',.32)}),
-  t180:Array.of('180',()=>{Array.of(523,659,784,1047,1319).forEach((f,i)=>tone(f,i*.09,.4,'square',.35));tone(2093,.5,.9,'triangle',.5)}),
-  bust:Array.of('Dépassé',()=>tone(300,0,.5,'sawtooth',.42,60)),
-  win:Array.of('Victoire',()=>{Array.of(523,659,784,659,784,1047).forEach((f,i)=>tone(f,i*.14,.3,'square',.35));tone(1568,.9,1,'triangle',.5)})
+  miss:Array.of('Raté',()=>tone(200,0,.15,'triangle',.25,70)),
+  bull:Array.of('Bull',()=>{tone(1318,0,.5,'sine',.3);tone(1976,0,.35,'sine',.12)}),
+  dbull:Array.of('D-Bull',()=>{tone(1318,0,.35,'sine',.3);tone(1760,.12,.35,'sine',.3);tone(2349,.24,.6,'sine',.3)}),
+  lowton:Array.of('Low ton',()=>Array.of(392,523,659).forEach((f,i)=>tone(f,i*.12,.25,'square',.12))),
+  highton:Array.of('High ton',()=>Array.of(523,659,784,1047).forEach((f,i)=>tone(f,i*.1,.28,'square',.13))),
+  hat:Array.of('Hat trick',()=>{Array.of(0,.14,.28).forEach(t=>tone(1318,t,.3,'sine',.3));tone(1760,.45,.7,'sine',.3)}),
+  bed:Array.of('3 in a bed',()=>{Array.of(0,.1,.2).forEach(thud);tone(880,.35,.5,'sawtooth',.12)}),
+  t180:Array.of('180',()=>{Array.of(523,659,784,1047,1319).forEach((f,i)=>tone(f,i*.09,.4,'square',.14));tone(2093,.5,.9,'sine',.25)}),
+  bust:Array.of('Dépassé',()=>tone(300,0,.5,'sawtooth',.18,60)),
+  win:Array.of('Victoire',()=>{Array.of(523,659,784,659,784,1047).forEach((f,i)=>tone(f,i*.14,.3,'square',.13));tone(1568,.9,1,'sine',.25)})
 };
 function sfx(k,force){if(!snd&&!force)return;try{SFX[k].at(1)()}catch(e){}}
 const sfxFor=(sector,mult)=>sector===0?'miss':sector===25?(mult===2?'dbull':'bull'):mult===3?'triple':mult===2?'double':'single';
@@ -526,27 +499,17 @@ function hitWords(label,sector,mult){
 }
 const spoken=p=>{const f=profiles[p.pid];return(f&&f.phonetic&&f.phonetic.trim())||cap(p.name.toLowerCase())};
 
-// Ajoute 250 ms de silence devant ET normalise/amplifie l'onde vocale au maximum
 function padBuf(ctx,raw){
   const pre=Math.floor(ctx.sampleRate*0.25),post=Math.floor(ctx.sampleRate*0.08);
   const out=ctx.createBuffer(raw.numberOfChannels,pre+raw.length+post,ctx.sampleRate);
-  let peak=0;
-  for(let ch=0;ch<raw.numberOfChannels;ch++){
-    const d=raw.getChannelData(ch);
-    for(let i=0;i<d.length;i++){const a=Math.abs(d[i]);if(a>peak)peak=a}
-  }
-  const boost=peak>0.01?Math.min(3.0,0.98/peak)*1.35:1.5;
-  for(let ch=0;ch<raw.numberOfChannels;ch++){
-    const src=raw.getChannelData(ch),dst=out.getChannelData(ch);
-    for(let i=0;i<src.length;i++)dst[pre+i]=Math.max(-1,Math.min(1,src[i]*boost));
-  }
+  for(let ch=0;ch<raw.numberOfChannels;ch++)out.getChannelData(ch).set(raw.getChannelData(ch),pre);
   return out
 }
 function playBuf(buf){
   const ctx=getAc();
   if(curSrc){try{curSrc.stop()}catch(e){}}
   const src=ctx.createBufferSource();
-  src.buffer=buf;src.connect(masterOut||ctx.destination);curSrc=src;src.start(ctx.currentTime)
+  src.buffer=buf;src.connect(ctx.destination);curSrc=src;src.start(ctx.currentTime)
 }
 
 async function say(t,test){
@@ -676,7 +639,6 @@ const dartLimit=p=>3+(p.extra||0);
 const dartsLeft=p=>dartLimit(p)-p.darts.length;
 const sg=n=>(n>0?'+':n<0?'−':'±')+Math.abs(n);
 let lastVolley=null,drawAnn=[];
-
 function resetVolley(p){p.darts=[];p.turn=0;p.vol=[];p.mods=[];p.cast=false;p.extra=0;p.rempart=false;p.furie=0;p.capLeft=null}
 function gainMana(p,n){p.mana=Math.max(0,Math.min(FANTASY.manaMax,p.mana+n))}
 // d>0 : pénalité (le score remonte, jamais au-dessus de 301) ; d<0 : bonus (jamais sous FANTASY.minScore)
@@ -691,15 +653,13 @@ const gapToLeader=p=>{const L=rankOthers(p).at(0);return L?p.score-L.score:0};
 const aheadOf=p=>players.filter(o=>o!==p&&o.score<p.score).sort((a,b)=>b.score-a.score).at(0)||null;
 const canTarget=(a,v,pierce)=>!!v&&v!==a&&!v.targeted&&(pierce||!v.immune);
 const numWords=a=>a.map(n=>FR[n]).join(' et ');
-
 function drawNums(k){
   const pool=[];for(let n=1;n<=20;n++)if(!FANTASY.drawExclude.includes(n))pool.push(n);
   const out=[];while(out.length<k&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1).at(0));
   out.sort((a,b)=>a-b);drawAnn=drawAnn.concat(out);
-  if(ledOn&&activeService)out.forEach(n=>sendLed(led16(0x03,Array.of(255,170,0),LED_POS[n],0x14,0)));
+  if(ledOn&&activeService)out.forEach(n=>sendLed(led16(0x03,[255,170,0],LED_POS[n],0x14,0)));
   return out
 }
-
 // Applique un skill offensif : un seul par cible et par tour de table, boucliers et immunité respectés (sauf « pierce »)
 function strike(a,v,fx,txt,pierce){
   if(!canTarget(a,v,pierce))return v.name+' : protégé';
@@ -708,14 +668,13 @@ function strike(a,v,fx,txt,pierce){
   if(!pierce&&v.shield==='reflect'){v.shield=null;fx(v,a);return v.name+' renvoie le sort sur '+a.name}
   fx(a,v);return v.name+' '+txt
 }
-
 const needDart=p=>dartsLeft(p)>0?'':'plus de fléchette dans cette volée';
 const needLeader=p=>leaderOther(p)?'':'tu es déjà en tête';
 const hasTarget=pierce=>p=>players.some(o=>canTarget(p,o,pierce))?'':'aucune cible possible';
 const pickTarget=pierce=>(p,s)=>choose(s.name+' : choisir une cible',fmt(s),players.filter(o=>o!==p).map(o=>({
   value:players.indexOf(o),disabled:!canTarget(p,o,pierce),
   label:o.name+' — '+o.score+(o.targeted?' (déjà visé ce tour)':!pierce&&o.immune?' (intouchable)':!pierce&&o.shield?' (bouclier)':'')})));
-const hitAll=(p,list)=>list.filter(x=>x.at(0)).map(([v,n])=>strike(p,v,(a,b)=>addScore(b,n),'+'+n)).join(' · ');
+const hitAll=(p,list)=>list.filter(x=>x[0]).map(([v,n])=>strike(p,v,(a,b)=>addScore(b,n),'+'+n)).join(' · ');
 
 const SKILL={
   garde:{run:p=>{p.shield='block';return'bouclier levé'}},
@@ -771,7 +730,6 @@ function castBlock(p,k){
   if(p.mana<s.cost)return'pas assez de mana';
   return''
 }
-
 async function castSkill(k){
   const p=players[cur];if(!p||!p.job)return;
   const s=JOB[p.job].skills[k],S=SKILL[s.id];
@@ -822,7 +780,6 @@ function fxDart(p,label,sector,mult){
   if(m!==mult)label=(sector===25?'D-BULL':'SDT'.charAt(m-1)+sector)+'★';
   return{label,pts,m,notes,post,ann}
 }
-
 function familiarCheck(sector){
   const out=[];
   players.forEach(q=>{if(q.familiar===sector&&!q.famGot&&q.mana<FANTASY.manaMax){q.famGot=true;gainMana(q,1);out.push('familier de '+q.name+' +1 mana')}});
@@ -855,12 +812,10 @@ function fxBlock(p,i,J){
   }).join('')+'</div>';
   return h+'</div>'
 }
-
 function jobIcon(J,s){
   const ic=jobIcons[J.id]&&jobIcons[J.id].icon,st='width:'+s+'px;height:'+s+'px;font-size:'+Math.round(s*.6)+'px';
   return ic?'<img class="av" alt="'+esc(J.name)+'" src="'+esc(ic)+'" style="'+st+'">':'<span class="av" role="img" aria-label="'+esc(J.name)+'" style="'+st+'">'+J.emoji+'</span>'
 }
-
 let chooseRes=null,chooseVal=null;
 function choose(title,info,opts,grid){
   $('pickTitle').textContent=title;$('pickInfo').textContent=info||'';
@@ -888,7 +843,6 @@ function hit(label,sector,mult){
   if(!p.darts.length)p.ts=p.score;
   p.st.d++;if(mult===3&&sector<25)p.st.t++;if(sector===25)p.st.b++;
   let won=false,bust=false;
-
   if(fan){const r=fxDart(p,label,sector,mult);label=r.label;pts=r.pts;em=r.m;notes=r.notes;post=r.post;ann=r.ann}
 
   if(isX01()){
@@ -1134,6 +1088,7 @@ $('nReload').onclick=async()=>{
   if(!await ask('Remplacer les données locales par celles de GitHub ?'))return;
   const backup=profiles;profiles={};
   const r=await pull();
+  // Avant : les profils locaux étaient effacés AVANT la lecture ; sans réseau ou sans fichier distant, tout était perdu.
   if(!r||!r.sha){profiles=backup;saveP();toast('GitHub injoignable ou vide : données locales conservées.')}
   else toast('Profils rechargés depuis GitHub.');
   renderPlayers()
@@ -1214,10 +1169,10 @@ $('labBtns').onclick=e=>{
   const b=e.target.closest('[data-lab]');if(!b)return;
   if(!activeService){toast('Connectez d\'abord la cible.');return}
   const k=b.dataset.lab;
-  ({ring:()=>sendRawLed(LED_CLEAR_RING),nums:()=>sendRawLed(LED_CLEAR_NUMS),ringT:()=>sendRawLed(led16(0x14,Array.of(0,0,0),0x10,0x14,0)),
-    hit:()=>sendRawLed(led16(0x03,Array.of(255,0,0),LED_POS[20],0x14,0)),
-    bull:()=>sendRawLed(led16(0x17,Array.of(0,200,255),0x10,0x14,1)),
-    dbull:()=>sendRawLed(led16(0x11,Array.of(255,170,0),0x10,0x05,0,Array.of(255,0,0)))})[k]();
+  ({ring:()=>sendRawLed(LED_CLEAR_RING),nums:()=>sendRawLed(LED_CLEAR_NUMS),ringT:()=>sendRawLed(led16(0x14,[0,0,0],0x10,0x14,0)),
+    hit:()=>sendRawLed(led16(0x03,[255,0,0],LED_POS[20],0x14,0)),
+    bull:()=>sendRawLed(led16(0x17,[0,200,255],0x10,0x14,1)),
+    dbull:()=>sendRawLed(led16(0x11,[255,170,0],0x10,0x05,0,[255,0,0]))})[k]();
   toast('Envoyé : '+b.textContent)
 };
 $('labSend').onclick=()=>{
