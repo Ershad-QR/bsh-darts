@@ -94,6 +94,8 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
     <button class="b" id="mLog">Journal de la cible</button>
     <button class="b" id="mLed">Éteindre les LED de la cible</button>
     <button class="b" id="mLedT"></button>
+    <button class="b" id="mLedLab">Atelier LED <small>tests</small></button>
+    <a class="b" href="led-officielles.html" style="text-decoration:none">Essayer la version LED officielles</a>
   </div>
 </section>
 
@@ -180,6 +182,20 @@ pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;max-hei
   <button class="b" data-x style="width:100%;margin-top:8px">Fermer</button>
 </dialog>
 <dialog id="dPick"><h2 id="pickTitle"></h2><p id="pickInfo" style="color:var(--m);font-size:.85rem;margin:0 0 8px"></p><div id="pickList" class="menu"></div><button class="b" data-x style="width:100%;margin-top:8px">Annuler</button></dialog>
+<dialog id="dLedLab"><h2>Atelier LED</h2>
+  <p style="color:var(--m);font-size:.8rem;margin:0 0 8px">Chaque bouton envoie une commande à la cible. Notez lesquels arrêtent l'arc-en-ciel : les octets envoyés apparaissent dans le Journal.</p>
+  <div class="menu" id="labBtns">
+    <button class="b" data-lab="ring">1. Anneau entier en noir (persistant)</button>
+    <button class="b" data-lab="nums">2. Effacer les 20 numéros (format 20 octets)</button>
+    <button class="b" data-lab="ringT">3. Anneau entier en noir (temporaire)</button>
+    <button class="b" data-lab="hit">Test : triple 20 en rouge</button>
+    <button class="b" data-lab="bull">Test : animation bull</button>
+    <button class="b" data-lab="dbull">Test : animation double bull</button>
+  </div>
+  <label for="labHex">Commande libre (octets en hexadécimal, séparés par des espaces)</label>
+  <input type="text" id="labHex" placeholder="14 00 00 00 00 00 00 00 00 00 10 00 14 00 00 01" autocomplete="off">
+  <div class="row" style="margin-top:8px"><button class="b p" id="labSend">Envoyer</button><button class="b" data-x>Fermer</button></div>
+</dialog>
 <dialog id="dAsk"><p id="askMsg" style="margin-top:0"></p><div class="row"><button class="b p" id="askY">Confirmer</button><button class="b" id="askN">Annuler</button></div></dialog>
 <dialog id="dLog"><h2>Journal</h2><pre id="logBox"></pre><button class="b" data-x style="width:100%;margin-top:10px">Fermer</button></dialog>
 <input type="file" id="avFile" accept="image/*" hidden>
@@ -297,7 +313,7 @@ const live=()=>Object.keys(profiles).filter(k=>profiles[k]&&!profiles[k].deleted
 const saveP=()=>store('granboard_profiles',profiles);
 
 // ---------- Cible Bluetooth ----------
-let activeService=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,ledOn=load('bsh_led_v2',{on:false}).on;
+let activeService=null,wc=null,ledTimer=null,ledQ=Promise.resolve(),connected=false,ledOn=load('bsh_led_v3',{on:true}).on;
 let bleDev=null,bleChar=null,rxBuf='',rxLast=0,rxReadyAt=0;
 
 function setBle(ok){
@@ -338,6 +354,7 @@ async function connectBoard(){
     wc=null;
     rxBuf='';rxReadyAt=Date.now()+2000; // la cible peut renvoyer son dernier impact juste après la connexion
     setBle(true);
+    ledOff(); // coupe l'animation arc-en-ciel dès la connexion
     sfx('bull');
     toast('✅ Cible connectée !');
     log('Cible connectée : '+(device.name||'GRANBOARD')+' (notifications actives)');
@@ -391,6 +408,9 @@ function unknownCode(code){
   toast('Code inconnu reçu : '+code+' (voir Journal)');
 }
 
+// Commandes LED documentées pour la Granboard 3s (github.com/keenanlk/granboard-ble-codes).
+// Format 16 octets : [CMD, R,G,B, R2,G2,B2, 0,0,0, POS, 0, DUR, 0,0, FLAG]  (FLAG 0 = temporaire, 1 = persistant)
+// Les commandes ont besoin d'environ 60 ms entre elles, sinon la cible peut en perdre.
 function sendRawLed(a){
   if(!activeService)return;
   ledQ=ledQ.then(async()=>{
@@ -398,20 +418,30 @@ function sendRawLed(a){
     const d=new Uint8Array(a);
     if(wc.properties&&wc.properties.writeWithoutResponse)await wc.writeValueWithoutResponse(d);
     else await wc.writeValue(d);
+    log('LED → ['+Array.from(d,b=>b.toString(16).padStart(2,'0')).join(' ')+']');
+    await sleep(60);
   }).catch(e=>log('LED : '+e.message));
 }
 function sendLed(a){if(ledOn)sendRawLed(a)}
-function ledOff(){clearTimeout(ledTimer);sendRawLed(Array.of(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))}
+const LED_POS={25:0,1:28,2:49,3:55,4:34,5:22,6:40,7:1,8:7,9:16,10:43,11:10,12:19,13:37,14:13,15:46,16:4,17:52,18:31,19:58,20:25};
+const led16=(cmd,rgb,pos,dur,flag,rgb2)=>Array.of(cmd,rgb[0],rgb[1],rgb[2],...(rgb2||[0,0,0]),0,0,0,pos,0,dur,0,0,flag);
+const LED_CLEAR_RING=led16(0x14,[0,0,0],0x10,0x14,1); // anneau entier en noir, persistant
+const LED_CLEAR_NUMS=new Array(20).fill(0);          // format 20 octets : tous les numéros éteints
+// Tout éteindre (y compris l'arc-en-ciel) : toujours envoyé, même si le pilotage des LED est désactivé.
+// Avant : la commande envoyée était un « clignotement simple en noir sur la bulle », qui n'éteignait rien.
+function ledOff(){clearTimeout(ledTimer);sendRawLed(LED_CLEAR_RING);sendRawLed(LED_CLEAR_NUMS)}
 function ledHit(sector,mult,ton){
-  if(!ledOn||!activeService)return;clearTimeout(ledTimer);let ms=1100;
-  if(ton){sendLed(Array.of(0x11,0,0,0xFF,0,0xFF,0xFF,0,0,0,0x0D,0,5,2,0,1));ms=2400}
-  else if(sector===25&&mult===2){sendLed(Array.of(0x1F,0x7D,0x0A,0x4A,0x7D,0x0A,0x4A,0xFC,0x16,0x62,2,0,0x23,1,0,1));ms=1600}
-  else if(sector===25){sendLed(Array.of(0x18,0x7D,0,0,0,0,0,0,0,0,0,0,0x14,0,0,1));ms=1200}
-  else if(sector>=1&&sector<=20){const pos=(25+RING.indexOf(sector)*3)%60,[r,g,b]=COL[cur%COL.length].led;sendLed(Array.of(mult,r,g,b,0xD7,0x4C,0,mult===3?0x7D:0,0,0,pos,0,0x14,0,0,1))}
-  else return;
-  ledTimer=setTimeout(ledOff,ms);
+  if(!ledOn||!activeService)return;clearTimeout(ledTimer);
+  if(ton){sendLed(led16(0x17,[0,255,0],0x10,0x14,1));ledTimer=setTimeout(ledOff,2200);return}          // ton / victoire : anneau vert qui clignote
+  if(sector===25&&mult===2){sendLed(led16(0x11,[255,170,0],0x10,0x05,0,[255,0,0]));ledTimer=setTimeout(ledOff,1800);return} // double bull : vague or et rouge
+  if(sector===25){sendLed(led16(0x17,[0,200,255],0x10,0x14,1));ledTimer=setTimeout(ledOff,1400);return}  // bull : anneau bleu qui clignote
+  if(sector>=1&&sector<=20){ // seule la LED du numéro touché : 1, 2 ou 3 clignotements selon simple/double/triple, puis extinction
+    const c=COL[cur%COL.length].led.map(v=>Math.min(255,v*2));
+    sendLed(led16(Math.min(3,Math.max(1,mult)),c,LED_POS[sector],0x14,0))
+  }
 }
-function ledNext(){if(!ledOn||!activeService)return;clearTimeout(ledTimer);sendLed(Array.of(0x11,0x7D,0,0,0,0x7D,0,0,0,0,0x10,0,5,0,0,1));ledTimer=setTimeout(ledOff,1000)}
+// Changement de joueur : on éteint tout (plus d'animation entre deux volées)
+function ledNext(){if(activeService)ledOff()}
 
 function signal(code){
   const h=MAP[code];
@@ -627,7 +657,7 @@ function drawNums(k){
   const pool=[];for(let n=1;n<=20;n++)if(!FANTASY.drawExclude.includes(n))pool.push(n);
   const out=[];while(out.length<k&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1).at(0));
   out.sort((a,b)=>a-b);drawAnn=drawAnn.concat(out);
-  if(ledOn&&activeService&&out.length)ledHit(out.at(0),1,false);
+  if(ledOn&&activeService)out.forEach(n=>sendLed(led16(0x03,[255,170,0],LED_POS[n],0x14,0)));
   return out
 }
 // Applique un skill offensif : un seul par cible et par tour de table, boucliers et immunité respectés (sauf « pierce »)
@@ -801,7 +831,7 @@ function startGame(ids,jobs){
   mode=$('gMode').value;
   players=ids.map(id=>fresh(id,jobs&&jobs[id]));cur=0;hist=[];locked=false;man=false;over=false;lastIds=ids;lastJobs=jobs||{};lastVolley=null;
   $('home').classList.remove('on');$('game').classList.add('on');
-  keepAwake(true);
+  keepAwake(true);ledOff();
   upd();say('C\'est parti ! '+spoken(players.at(0))+', à toi de jouer.')
 }
 
@@ -1134,9 +1164,26 @@ $('ghLink').onclick=()=>{
 };
 
 $('mLog').onclick=()=>{$('logBox').textContent=logs.join('\n')||'Aucun événement.';$('dLog').showModal()};
-$('mLed').onclick=ledOff;
+$('mLedLab').onclick=()=>$('dLedLab').showModal();
+$('labBtns').onclick=e=>{
+  const b=e.target.closest('[data-lab]');if(!b)return;
+  if(!activeService){toast('Connectez d\'abord la cible.');return}
+  const k=b.dataset.lab;
+  ({ring:()=>sendRawLed(LED_CLEAR_RING),nums:()=>sendRawLed(LED_CLEAR_NUMS),ringT:()=>sendRawLed(led16(0x14,[0,0,0],0x10,0x14,0)),
+    hit:()=>sendRawLed(led16(0x03,[255,0,0],LED_POS[20],0x14,0)),
+    bull:()=>sendRawLed(led16(0x17,[0,200,255],0x10,0x14,1)),
+    dbull:()=>sendRawLed(led16(0x11,[255,170,0],0x10,0x05,0,[255,0,0]))})[k]();
+  toast('Envoyé : '+b.textContent)
+};
+$('labSend').onclick=()=>{
+  if(!activeService){toast('Connectez d\'abord la cible.');return}
+  const v=$('labHex').value.trim().split(/[\s,]+/).filter(Boolean).map(x=>parseInt(x,16));
+  if(!v.length||v.length>20||v.some(x=>isNaN(x)||x<0||x>255)){toast('Saisissez de 1 à 20 octets en hexadécimal (00 à ff).');return}
+  sendRawLed(v);toast('Commande envoyée ('+v.length+' octets)')
+};
+$('mLed').onclick=()=>{if(!activeService){toast('Connectez d\'abord la cible.');return}ledOff();toast('Commande d\'extinction envoyée')};
 function updLedBtn(){$('mLedT').textContent='Pilotage des LED : '+(ledOn?'activé':'désactivé')}
-$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led_v2',{on:ledOn});updLedBtn();toast(ledOn?'LED activées':'LED désactivées')};
+$('mLedT').onclick=()=>{if(ledOn){ledOff();ledOn=false}else ledOn=true;store('bsh_led_v3',{on:ledOn});updLedBtn();toast(ledOn?'LED activées':'LED désactivées')};
 updLedBtn();
 
 $('bConn').onclick=connectBoard;
